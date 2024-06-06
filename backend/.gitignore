@@ -1,0 +1,42 @@
+# Binární soubory
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+
+# Závislosti
+/node_modules
+/bower_components
+
+# Lokální soubory s nastavením
+/.vscode
+/.idea
+
+# Vytvořené soubory s buildem
+/build
+/dist
+
+# Soubory se zálohami nebo temporálními soubory
+*.backup
+*~
+*.swp
+
+# Nastavení pro uživatele
+/.env
+
+# Visual Studio Code soubory
+.vscode/
+
+# Nastavení pro sestavení a balení
+*.log
+npm-debug.log*
+
+# Soubory a složky generované dotnet CLI
+/.dotnet
+/bin
+/obj
+
+# NuGet soubory
+*.nupkg
+*.pfx
