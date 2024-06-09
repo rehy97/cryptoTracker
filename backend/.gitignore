@@ -10,7 +10,7 @@
 /bower_components
 
 # Lokální soubory s nastavením
-/.vscode
+/.vs
 /.idea
 
 # Vytvořené soubory s buildem
