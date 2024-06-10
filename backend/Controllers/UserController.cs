@@ -46,7 +46,7 @@ namespace backend.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(User user)
+        public IActionResult Create([FromBody] User user)
         {
             _context.Users.Add(user);
             _context.SaveChanges();
