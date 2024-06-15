@@ -1,0 +1,165 @@
+import React from 'react';
+import { AppBar, Button, Container, Divider, Drawer, MenuItem, Toolbar, Typography, useTheme, Box } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { Link } from 'react-router-dom';
+import { alpha } from '@mui/material/styles';
+import ModeToggle from './ModeToggle';
+import { useThemeContext } from '../theme/ThemeContextProvider';
+
+const Navbar: React.FC = () => {
+    const [open, setOpen] = React.useState(false);
+    const theme = useTheme();
+    const { mode } = useThemeContext();
+
+    const handleToggle = () => {
+        setOpen(!open);
+    };
+
+    const navLinks = (
+        <>
+            <MenuItem component={Link} to="/cryptocurrencies" sx={{ py: '6px', px: '12px' }}>
+                <Typography variant="body2" color='text.primary'>
+                    Cryptocurrencies
+                </Typography>
+            </MenuItem>
+            <MenuItem component={Link} to="/news" sx={{ py: '6px', px: '12px' }}>
+                <Typography variant="body2" color='text.primary'>
+                    News
+                </Typography>
+            </MenuItem>
+        </>
+    );
+
+    const authButtons = (
+        <>
+            <ModeToggle />
+            <Button color="primary" variant="text" size="small" component={Link} to="/login">
+                Login
+            </Button>
+            <Button color="primary" variant="contained" size="small" component={Link} to="/register">
+                Register
+            </Button>
+        </>
+    );
+
+    return (
+        <div>
+            <AppBar
+                position="fixed"
+                sx={{
+                    boxShadow: 0,
+                    bgcolor: 'transparent',
+                    backgroundImage: 'none',
+                    mt: 2,
+                    color: theme.palette.text.primary,
+                }}
+            >
+                <Container maxWidth="lg">
+                    <Toolbar
+                        variant="regular"
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexShrink: 0,
+                            borderRadius: '999px',
+                            backgroundColor: alpha(theme.palette.background.paper, mode === 'dark' ? 0.5 : 1),
+                            color: mode === 'dark' ? theme.palette.text.primary : 'black',
+                            backdropFilter: 'blur(10px)',
+                            maxHeight: 40,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            boxShadow: 1,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                ml: '-18px',
+                                px: 0,
+                            }}
+                        >
+                            <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"
+                                alt="logo"
+                                style={{ width: '55px', height: 'auto', cursor: 'pointer' }}
+                            />
+                        </Box>
+                        <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                            {navLinks}
+                        </Box>
+                        <Box
+                            sx={{
+                                display: { xs: 'none', md: 'flex' },
+                                gap: 0.5,
+                                alignItems: 'center',
+                            }}
+                        >
+                            {authButtons}
+                        </Box>
+                        <Box sx={{ display: { sm: '', md: 'none' } }}>
+                            <Button
+                                color="primary"
+                                variant="text"
+                                size="small"
+                                onClick={handleToggle}
+                                sx={{ minWidth: '30px', p: '4px' }}
+                            >
+                                <MenuIcon />
+                            </Button>
+                            <Drawer anchor="right" open={open} onClose={handleToggle}>
+                                <Box
+                                    sx={{
+                                        minWidth: '60dvw',
+                                        flexDirection: 'column',
+                                        alignItems: 'end',
+                                        flexGrow: 1,
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'end',
+                                            flexGrow: 1,
+                                        }}
+                                    >
+                                        {navLinks}
+                                        <Divider />
+                                        <MenuItem>
+                                            <Button
+                                                color="primary"
+                                                variant="contained"
+                                                size="small"
+                                                component={Link}
+                                                sx={{ width: '100%' }}
+                                                to="/login"
+                                            >
+                                                Login
+                                            </Button>
+                                        </MenuItem>
+                                        <MenuItem>
+                                            <Button
+                                                color="primary"
+                                                variant="outlined"
+                                                size="small"
+                                                component={Link}
+                                                sx={{ width: '100%' }}
+                                                to="/register"
+                                            >
+                                                Register
+                                            </Button>
+                                        </MenuItem>
+                                    </Box>
+                                </Box>
+                            </Drawer>
+                        </Box>
+                    </Toolbar>
+                </Container>
+            </AppBar>
+        </div>
+    );
+};
+
+export default Navbar;
