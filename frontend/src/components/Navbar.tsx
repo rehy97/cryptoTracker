@@ -27,6 +27,11 @@ const Navbar: React.FC = () => {
                     News
                 </Typography>
             </MenuItem>
+            <MenuItem component={Link} to="/aboutus" sx={{ py: '6px', px: '12px' }}>
+                <Typography variant="body2" color='text.primary'>
+                    About Us
+                </Typography>
+            </MenuItem>
         </>
     );
 
@@ -45,7 +50,7 @@ const Navbar: React.FC = () => {
     return (
         <div>
             <AppBar
-                position="fixed"
+                position="static"
                 sx={{
                     boxShadow: 0,
                     bgcolor: 'transparent',
@@ -80,11 +85,11 @@ const Navbar: React.FC = () => {
                                 px: 0,
                             }}
                         >
-                            <img
-                                src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"
-                                alt="logo"
-                                style={{ width: '55px', height: 'auto', cursor: 'pointer' }}
-                            />
+                                <img
+                                    src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"
+                                    alt="logo"
+                                    style={{ width: '55px', height: 'auto', cursor: 'pointer' }}
+                                />
                         </Box>
                         <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                             {navLinks}
@@ -108,7 +113,7 @@ const Navbar: React.FC = () => {
                             >
                                 <MenuIcon />
                             </Button>
-                            <Drawer anchor="right" open={open} onClose={handleToggle}>
+                            <Drawer anchor="left" open={open} onClose={handleToggle} variant='temporary' ModalProps={{keepMounted: true}}>
                                 <Box
                                     sx={{
                                         minWidth: '60dvw',

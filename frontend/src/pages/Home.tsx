@@ -1,9 +1,17 @@
 import React from "react";
+import Hero from "../components/Hero";
+import CryptoList from "../components/CryptoList";
+import { Box, Typography, List, ListItem, ListItemText } from '@mui/material';
 
 const Home = () => {
   return (
     <div>
-      <h1>Home</h1>
+        <main>
+          <Hero />
+          <Box sx={{ my: 4 }}>
+                    <CryptoList />
+            </Box>
+        </main>
     </div>
   );
 };
