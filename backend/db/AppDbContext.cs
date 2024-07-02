@@ -1,26 +1,31 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using backend.models;
 
 namespace backend.db
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<User>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.UseSerialColumns();
-        }
+            base.OnModelCreating(modelBuilder);
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Watchlist> Watchlists { get; set; }
-        public DbSet<Transaction> Transactions { get; set; }
-        public DbSet<Cryptocurrency> Cryptocurrencies { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<CryptocurrencyCategory> CryptocurrencyCategories { get; set; }
+            List<IdentityRole> roles = new List<IdentityRole>
+            {
+                new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" },
+                new IdentityRole { Name = "User", NormalizedName = "USER" }
+            };
+
+            modelBuilder.Entity<IdentityRole>().HasData(roles);
+        }
     }
 }

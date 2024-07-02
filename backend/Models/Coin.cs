@@ -54,7 +54,7 @@ namespace backend.models
         [JsonPropertyName("atl_date")]
         public DateTime AtlDate { get; set; }
         [JsonPropertyName("roi")]
-        public object Roi { get; set; }
+        public object Roi { get; set; } = string.Empty;
         [JsonPropertyName("last_updated")]
         public DateTime LastUpdated { get; set; }
 

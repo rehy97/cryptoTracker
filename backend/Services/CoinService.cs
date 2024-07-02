@@ -26,7 +26,7 @@ namespace backend.Services
                 client.Headers.Add("User-Agent: Other");
                 var js = client.DownloadString(URL.ToString());
                 var coins = JsonSerializer.Deserialize<List<Coin>>(js);
-                return coins;
+                return coins ?? new List<Coin>();
         }
     }
 }

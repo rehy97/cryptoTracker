@@ -5,9 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using backend.models;
 using backend.db;
+using backend.Dtos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using Microsoft.AspNetCore.Identity;
 
 namespace backend.Controllers
 {
@@ -16,12 +18,15 @@ namespace backend.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+
+        private readonly UserManager<User> _userManager;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(AppDbContext context, ILogger<UserController> logger)
+        public UserController(AppDbContext context, ILogger<UserController> logger, UserManager<User> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -45,27 +50,50 @@ namespace backend.Controllers
             return Ok(user);
         }
 
-        [HttpPost]
-        public IActionResult Create([FromBody] User user)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            _context.Users.Add(user);
-            _context.SaveChanges();
-
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
-        }
-
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, User user)
-        {
-            if (id != user.Id)
+            try 
             {
-                return BadRequest();
+                if(!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var user = new User
+                {
+                    UserName = registerDto.Username,
+                    Email = registerDto.Email,
+                    FirstName = registerDto.FirstName,
+                    LastName = registerDto.LastName,
+                    DateOfBirth = registerDto.DateOfBirth
+                };
+
+                var createdUser = await _userManager.CreateAsync(user, registerDto.Password);
+
+                if(createdUser.Succeeded)
+                {
+                    var userRole = await _userManager.AddToRoleAsync(user, "User");
+
+                    if(userRole.Succeeded)
+                    {
+                        return Ok("User created");
+                    }
+                    else
+                    {
+                        return StatusCode(500, userRole.Errors);
+                    }
+                }
+                else
+                {
+                    return StatusCode(500, createdUser.Errors);
+                }
             }
-
-            _context.Entry(user).State = EntityState.Modified;
-            _context.SaveChanges();
-
-            return NoContent();
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error registering user");
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
