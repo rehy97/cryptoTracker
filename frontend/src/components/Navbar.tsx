@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppBar, Button, Container, Divider, Drawer, MenuItem, Toolbar, Typography, useTheme, Box } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { alpha } from '@mui/material/styles';
 import ModeToggle from './ModeToggle';
 import { useThemeContext } from '../theme/ThemeContextProvider';
@@ -10,6 +10,7 @@ const Navbar: React.FC = () => {
     const [open, setOpen] = React.useState(false);
     const theme = useTheme();
     const { mode } = useThemeContext();
+    const navigate = useNavigate(); // Initialize useNavigate hook
 
     const handleToggle = () => {
         setOpen(!open);
@@ -47,6 +48,10 @@ const Navbar: React.FC = () => {
         </>
     );
 
+    const handleLogoClick = () => {
+        navigate('/'); // Navigate to the root path ('/')
+    };
+
     return (
         <div>
             <AppBar
@@ -77,20 +82,23 @@ const Navbar: React.FC = () => {
                             boxShadow: 1,
                         }}
                     >
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                ml: '-18px',
-                                px: 0,
-                            }}
-                        >
+                        <Link to="/" style={{ textDecoration: 'none' }} onClick={handleLogoClick}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    ml: '-18px',
+                                    px: 0,
+                                    cursor: 'pointer',
+                                }}
+                            >
                                 <img
                                     src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"
                                     alt="logo"
-                                    style={{ width: '55px', height: 'auto', cursor: 'pointer' }}
+                                    style={{ width: '55px', height: 'auto' }}
                                 />
-                        </Box>
+                            </Box>
+                        </Link>
                         <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                             {navLinks}
                         </Box>

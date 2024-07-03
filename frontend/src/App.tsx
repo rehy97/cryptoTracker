@@ -1,9 +1,11 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar"; // Assuming your Navbar component is in the same directory
-import Home from "./pages/Home"; // Assuming your Home component is in the same directory
+import HomePage from "./pages/HomePage"; // Assuming your Home component is in the same directory
 import { useThemeContext } from "./theme/ThemeContextProvider";
 import { CssBaseline, ThemeProvider } from "@mui/material";
+import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
 
 const App = () => {
 
@@ -14,7 +16,9 @@ const App = () => {
       <CssBaseline />
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
       </Routes>
     </ThemeProvider>
   );

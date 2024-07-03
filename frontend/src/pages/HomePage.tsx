@@ -3,7 +3,7 @@ import Hero from "../components/Hero";
 import CryptoList from "../components/CryptoList";
 import { Box, Typography, List, ListItem, ListItemText } from '@mui/material';
 
-const Home = () => {
+const HomePage = () => {
   return (
     <div>
         <main>
@@ -16,4 +16,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomePage;
