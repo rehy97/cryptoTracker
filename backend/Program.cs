@@ -1,11 +1,11 @@
 using backend.db;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
-using backend.Services;
 using Microsoft.AspNetCore.Identity;
 using backend.models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +51,8 @@ options.TokenValidationParameters = new TokenValidationParameters
     )
 };
 });
+
+builder.Services.AddScoped<TokenService>();
 
 var app = builder.Build();
 
