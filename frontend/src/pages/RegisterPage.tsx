@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
-import { Box, Typography, Container, TextField, Button, Alert, IconButton, InputAdornment } from '@mui/material';
+import { Box, Typography, Container, Button, Alert, InputAdornment, IconButton, TextField } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import FormInput from '../components/FormInput';
+import PasswordField from '../components/PasswordField';
+import ValidationMessages from '../components/ValidationMessages';
+import useValidations from '../hooks/useValidations';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+
+interface PasswordValidations {
+  length: boolean;
+  uppercase: boolean;
+  number: boolean;
+  match: boolean;
+}
 
 const RegisterPage: React.FC = () => {
   const theme = useTheme();
@@ -17,9 +29,11 @@ const RegisterPage: React.FC = () => {
     confirmPassword: '',
     dateOfBirth: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const validations = useValidations(formData);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -28,17 +42,21 @@ const RegisterPage: React.FC = () => {
     });
   };
 
-  const togglePasswordVisibility = () => {
+  const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
+    if (!validations.passwordMatch) {
       setError('Passwords do not match');
       return;
     }
-  
+    if (!validations.ageValid) {
+      setError('You must be at least 18 years old to register');
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:5221/api/User/register', {
         username: formData.username,
@@ -48,12 +66,12 @@ const RegisterPage: React.FC = () => {
         password: formData.password,
         dateOfBirth: formData.dateOfBirth,
       });
-  
+
       if (response.status === 200) {
         setSuccess('Registration successful');
         navigate('/login');
       }
-    } catch (error : any) {
+    } catch (error: any) {
       if (error.response && error.response.data && Array.isArray(error.response.data)) {
         const errorMessage = error.response.data.join('\n');
         setError(errorMessage);
@@ -84,8 +102,8 @@ const RegisterPage: React.FC = () => {
         <Box
           component="form"
           sx={{
-            borderRadius: '8px',     // Rounded corners
-            p: 3,                    // Padding
+            borderRadius: '8px',
+            p: 3,
             mt: 3,
             display: 'flex',
             flexDirection: 'column',
@@ -94,71 +112,59 @@ const RegisterPage: React.FC = () => {
           }}
           onSubmit={handleSubmit}
         >
-          <TextField
-            variant="outlined"
-            fullWidth
+          <FormInput
             label="Username"
             name="username"
-            autoComplete="username"
-            autoFocus
-            required
             value={formData.username}
             onChange={handleChange}
+            validation={validations.username}
+            required
           />
-          <TextField
-            variant="outlined"
-            fullWidth
+          <FormInput
             label="First Name"
             name="firstName"
-            autoComplete="given-name"
-            required
             value={formData.firstName}
             onChange={handleChange}
+            validation={validations.firstName}
+            required
           />
-          <TextField
-            variant="outlined"
-            fullWidth
+          <FormInput
             label="Last Name"
             name="lastName"
-            autoComplete="family-name"
-            required
             value={formData.lastName}
             onChange={handleChange}
+            validation={validations.lastName}
+            required
           />
-          <TextField
-            variant="outlined"
-            fullWidth
+          <FormInput
             label="Email Address"
             name="email"
-            autoComplete="email"
-            required
+            type="email"
             value={formData.email}
             onChange={handleChange}
+            validation={validations.email}
+            required
           />
-          <TextField
-            variant="outlined"
-            fullWidth
+          <PasswordField
             label="Password"
             name="password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            required
             value={formData.password}
+            showPassword={showPassword}
             onChange={handleChange}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={togglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
+            onClickShowPassword={handleClickShowPassword}
+            validations={{
+              length: validations.passwordLength,
+              uppercase: validations.passwordUppercase,
+              number: validations.passwordNumber,
             }}
+            required
           />
+          <ValidationMessages 
+          validations={{
+              length: validations.passwordLength,
+              uppercase: validations.passwordUppercase,
+              number: validations.passwordNumber,
+            }} />
           <TextField
             variant="outlined"
             fullWidth
@@ -171,35 +177,54 @@ const RegisterPage: React.FC = () => {
             onChange={handleChange}
             InputProps={{
               endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={togglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
+                <>
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                  {validations.passwordMatch && (
+                    <InputAdornment position="end">
+                      <CheckCircleOutlineIcon color="success" />
+                    </InputAdornment>
+                  )}
+                </>
               ),
             }}
           />
-          <TextField
-            variant="outlined"
-            fullWidth
+          <FormInput
             label="Date of Birth"
             name="dateOfBirth"
             type="date"
             InputLabelProps={{ shrink: true }}
-            required
             value={formData.dateOfBirth}
             onChange={handleChange}
+            required
           />
+          <Typography variant="caption" color={validations.ageValid ? 'success.main' : 'error.main'}>
+            {validations.ageValid ? '✓' : '✕'} You must be at least 18 years old
+          </Typography>
           <Button
             type="submit"
             fullWidth
             variant="contained"
             color="primary"
             sx={{ mt: 3, mb: 2 }}
+            disabled={
+              !validations.username ||
+              !validations.firstName ||
+              !validations.lastName ||
+              !validations.email ||
+              !validations.passwordLength ||
+              !validations.passwordUppercase ||
+              !validations.passwordNumber ||
+              !validations.passwordMatch ||
+              !validations.ageValid
+            }
           >
             Register
           </Button>

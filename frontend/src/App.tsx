@@ -6,6 +6,7 @@ import { useThemeContext } from "./theme/ThemeContextProvider";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
+import CryptoDetailPage from "./pages/CryptoDetailPage";
 
 const App = () => {
 
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/crypto/:id" element={<CryptoDetailPage />} />
       </Routes>
     </ThemeProvider>
   );

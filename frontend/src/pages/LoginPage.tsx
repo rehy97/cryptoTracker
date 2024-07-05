@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Typography, Container, TextField, Button, Alert, IconButton, InputAdornment } from '@mui/material';
+import { Box, Typography, Container, TextField, Button, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 const LoginPage: React.FC = () => {
   const theme = useTheme();
@@ -13,17 +12,12 @@ const LoginPage: React.FC = () => {
     password: '',
   });
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -93,24 +87,11 @@ const LoginPage: React.FC = () => {
             fullWidth
             label="Password"
             name="password"
-            type={showPassword ? 'text' : 'password'}
+            type='password'
             autoComplete="current-password"
             required
             value={formData.password}
             onChange={handleChange}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={togglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
           />
           <Button
             type="submit"
