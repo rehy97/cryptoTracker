@@ -28,5 +28,29 @@ namespace backend.Services
                 var coins = JsonSerializer.Deserialize<List<Coin>>(js);
                 return coins ?? new List<Coin>();
         }
+
+        public async Task<bool> CheckCryptoExists(string cryptocurrencyId)
+        {
+            try
+            {
+                var url = $"{_baseUrl}coins/{cryptocurrencyId}";
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
+
+                // Check if response is successful
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking cryptocurrency: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

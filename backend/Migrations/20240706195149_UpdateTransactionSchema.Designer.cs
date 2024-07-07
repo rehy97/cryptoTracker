@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using backend.db;
@@ -11,9 +12,11 @@ using backend.db;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240706195149_UpdateTransactionSchema")]
+    partial class UpdateTransactionSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,13 +53,13 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "3efdedf2-b6aa-4caa-a3d3-e999c19204df",
+                            Id = "18f8d4fb-17f6-404a-9cf1-14f454146a67",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "b10173e1-de47-48a3-9464-6d8b266bd970",
+                            Id = "f1367a7e-f225-4251-a1b9-c2d38211090f",
                             Name = "User",
                             NormalizedName = "USER"
                         });
@@ -206,7 +209,8 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "CryptocurrencyId")
+                        .IsUnique();
 
                     b.ToTable("Transactions");
                 });
