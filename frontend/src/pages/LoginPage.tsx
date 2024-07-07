@@ -61,8 +61,8 @@ const LoginPage: React.FC = () => {
         <Box
           component="form"
           sx={{
-            borderRadius: '8px',     // Rounded corners
-            p: 3,                    // Padding
+            borderRadius: '8px', 
+            p: 3,   
             mt: 3,
             display: 'flex',
             flexDirection: 'column',

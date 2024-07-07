@@ -31,12 +31,12 @@ const CryptoList = () => {
     const formatPercentage = (value: number | null) => {
         if (value !== null) {
             const formattedValue = `${value.toFixed(2)}%`;
-            let color = 'inherit'; // Default color
+            let color = 'inherit';
 
             if (value < 0) {
-                color = '#ef5350'; // Light red for negative values
+                color = '#ef5350';
             } else if (value > 0) {
-                color = '#66bb6a'; // Light green for positive values
+                color = '#66bb6a';
             }
 
             return <span style={{ color }}>{formattedValue}</span>;
