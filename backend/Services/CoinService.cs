@@ -36,7 +36,6 @@ namespace backend.Services
                 var url = $"{_baseUrl}coins/{cryptocurrencyId}";
                 HttpResponseMessage response = await _httpClient.GetAsync(url);
 
-                // Check if response is successful
                 if (response.IsSuccessStatusCode)
                 {
                     return true;

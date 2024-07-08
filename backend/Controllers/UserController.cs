@@ -85,7 +85,7 @@ namespace backend.Controllers
                 }
                 else
                 {
-                    return StatusCode(500, "Username or password is incorrect");
+                    return Unauthorized("Username or password is incorrent");
                 }
             }
             catch(Exception ex)
@@ -115,8 +115,6 @@ namespace backend.Controllers
                 };
 
                 var createdUser = await _userManager.CreateAsync(user, registerDto.Password);
-
-                Console.WriteLine(createdUser.Succeeded);
 
                 if(createdUser.Succeeded)
                 {

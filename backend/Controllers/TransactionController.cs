@@ -41,7 +41,6 @@ namespace backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetAllUserTransactions()
         {
-            // Get the current user's username
             var username = User.GetUsername();
 
             if (username == null)
@@ -49,7 +48,6 @@ namespace backend.Controllers
                 return NotFound("User not found.");
             }
 
-            // Get the user based on the username (optional step, depending on your application logic)
             var user = await _userManager.FindByNameAsync(username);
 
             if (user == null)
@@ -57,7 +55,6 @@ namespace backend.Controllers
                 return NotFound("User not found.");
             }
 
-            // Retrieve transactions for the user
             var transactions = await _context.Transactions
                 .Where(x => x.UserId == user.Id)
                 .Select(transaction => new
@@ -81,7 +78,6 @@ namespace backend.Controllers
         [Authorize]
         public async Task<IActionResult> CreateTransaction([FromBody] NewTransactionDto transactionDto)
         {
-            // Get the current user's username
             var username = User.GetUsername();
 
             if (username == null)
@@ -100,8 +96,12 @@ namespace backend.Controllers
 
             if (!cryptoExists)
             {
+                Console.WriteLine(transactionDto.CryptocurrencyId);
+                Console.WriteLine("kek1");
                 return BadRequest($"Cryptocurrency with Id '{transactionDto.CryptocurrencyId}' does not exist.");
             }
+
+            Console.WriteLine("kek");
 
             if(transactionDto.Amount <= 0)
             {
@@ -208,6 +208,6 @@ namespace backend.Controllers
 
         return NoContent();
     }
-    }
+}
 
 }
