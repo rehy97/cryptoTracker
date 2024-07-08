@@ -1,25 +1,18 @@
 import React, { useState } from 'react';
 import { Box, Typography, Container, Button, Alert, InputAdornment, IconButton, TextField } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link } from 'react-router-dom';
 import FormInput from '../components/FormInput';
 import PasswordField from '../components/PasswordField';
 import ValidationMessages from '../components/ValidationMessages';
 import useValidations from '../hooks/useValidations';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-
-interface PasswordValidations {
-  length: boolean;
-  uppercase: boolean;
-  number: boolean;
-  match: boolean;
-}
+import { useAuth } from '../context/useAuth';
 
 const RegisterPage: React.FC = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  const { registerUser } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -48,37 +41,52 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if(!validations.username || !validations.firstName || !validations.lastName || !validations.email || !validations.passwordMatch || !validations.ageValid) {
+      setError('Please fill in all fields.');
+      return;
+    }
+
+    if(!validations.username) {
+      setError('Username must be at least 8 characters long.');
+      return;
+    }
+    if(!validations.firstName) {
+      setError('First name must be at least 3 characters long.');
+      return;
+    }
+    if(!validations.lastName) {
+      setError('Last name must be at least 3 characters long.');
+      return;
+    }
     if (!validations.passwordMatch) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
     if (!validations.ageValid) {
-      setError('You must be at least 18 years old to register');
+      setError('You must be at least 18 years old to register.');
       return;
+    }
+    if(!validations.email)
+    {
+        setError('Invalid format email address.');
+        return;
     }
 
     try {
-      const response = await axios.post('http://localhost:5221/api/User/register', {
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        dateOfBirth: formData.dateOfBirth,
-      });
-
-      if (response.status === 200) {
-        setSuccess('Registration successful');
-        navigate('/login');
-      }
+      await registerUser(
+        formData.username,
+        formData.firstName,
+        formData.lastName,
+        formData.email,
+        formData.password,
+        formData.dateOfBirth
+      );
+      setSuccess('User registered successfully');
     } catch (error: any) {
-      if (error.response && error.response.data && Array.isArray(error.response.data)) {
-        const errorMessage = error.response.data.join('\n');
-        setError(errorMessage);
-      } else {
-        setError('Registration failed');
-        console.error('Error registering:', error);
-      }
+      setError(error.message);
     }
   };
 
@@ -118,7 +126,6 @@ const RegisterPage: React.FC = () => {
             value={formData.username}
             onChange={handleChange}
             validation={validations.username}
-            required
           />
           <FormInput
             label="First Name"
@@ -126,7 +133,6 @@ const RegisterPage: React.FC = () => {
             value={formData.firstName}
             onChange={handleChange}
             validation={validations.firstName}
-            required
           />
           <FormInput
             label="Last Name"
@@ -134,16 +140,13 @@ const RegisterPage: React.FC = () => {
             value={formData.lastName}
             onChange={handleChange}
             validation={validations.lastName}
-            required
           />
           <FormInput
             label="Email Address"
             name="email"
-            type="email"
             value={formData.email}
             onChange={handleChange}
             validation={validations.email}
-            required
           />
           <PasswordField
             label="Password"
@@ -157,7 +160,6 @@ const RegisterPage: React.FC = () => {
               uppercase: validations.passwordUppercase,
               number: validations.passwordNumber,
             }}
-            required
           />
           <ValidationMessages 
           validations={{
@@ -172,7 +174,6 @@ const RegisterPage: React.FC = () => {
             name="confirmPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            required
             value={formData.confirmPassword}
             onChange={handleChange}
             InputProps={{
@@ -203,7 +204,6 @@ const RegisterPage: React.FC = () => {
             InputLabelProps={{ shrink: true }}
             value={formData.dateOfBirth}
             onChange={handleChange}
-            required
           />
           <Typography variant="caption" color={validations.ageValid ? 'success.main' : 'error.main'}>
             {validations.ageValid ? '✓' : '✕'} You must be at least 18 years old
@@ -214,7 +214,7 @@ const RegisterPage: React.FC = () => {
             variant="contained"
             color="primary"
             sx={{ mt: 3, mb: 2 }}
-            disabled={
+            /*disabled={
               !validations.username ||
               !validations.firstName ||
               !validations.lastName ||
@@ -224,7 +224,7 @@ const RegisterPage: React.FC = () => {
               !validations.passwordNumber ||
               !validations.passwordMatch ||
               !validations.ageValid
-            }
+            }*/
           >
             Register
           </Button>
@@ -241,3 +241,4 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
+

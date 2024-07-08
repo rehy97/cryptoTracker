@@ -1,7 +1,11 @@
 import React from 'react';
 import {Box, Typography, Container, Button} from '@mui/material';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 const Hero = () => {
+
+    const navigator = useNavigate();
+
     return (
         <Box
         sx={{
@@ -18,7 +22,7 @@ const Hero = () => {
             Objevte nejnovější informace o kryptoměnách a jejich trendech.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <Button variant="contained" color="primary" sx={{ m: 1 }}>
+            <Button onClick={() => navigator("/register")} variant="contained" color="primary" sx={{ m: 1 }}>
               Začít
             </Button>
             <Button variant="outlined" color="primary" sx={{ m: 1 }}>

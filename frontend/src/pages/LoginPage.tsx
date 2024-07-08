@@ -3,10 +3,13 @@ import { Box, Typography, Container, TextField, Button, Alert } from '@mui/mater
 import { useTheme } from '@mui/material/styles';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { loginAPI } from '../utils/api';
+import { useAuth } from '../context/useAuth';
 
 const LoginPage: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { loginUser } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -22,24 +25,13 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-  
-    try {
-      const response = await axios.post('http://localhost:5221/api/User/login', {
-        username: formData.username,
-        password: formData.password,
-      });
-  
-      if (response.status === 200) {
-        navigate('/dashboard');
-      }
-    } catch (error : any) {
-        if (error.response && error.response.data) {
-            setError(error.response.data);
-          } else {
-            setError('Login failed');
-            console.log(error.response.data);
-          }
+
+    if(!formData.username || !formData.password) {
+      setError('Please fill in all fields.');
+      return;
     }
+
+    loginUser(formData.username, formData.password);
   };
 
   return (
@@ -78,7 +70,6 @@ const LoginPage: React.FC = () => {
             name="username"
             autoComplete="username"
             autoFocus
-            required
             value={formData.username}
             onChange={handleChange}
           />
@@ -89,7 +80,6 @@ const LoginPage: React.FC = () => {
             name="password"
             type='password'
             autoComplete="current-password"
-            required
             value={formData.password}
             onChange={handleChange}
           />
