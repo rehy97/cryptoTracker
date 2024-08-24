@@ -27,7 +27,7 @@ const useValidations = (formData: any) => {
     };
 
     setValidations({
-      username: username.length >= 8,
+      username: username.length >= 3,
       firstName: firstName.length >= 3,
       lastName: lastName.length >= 3,
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),

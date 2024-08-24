@@ -1,7 +1,7 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar"; // Assuming your Navbar component is in the same directory
-import HomePage from "./pages/HomePage"; // Assuming your Home component is in the same directory
+import { Routes, Route, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import HomePage from "./pages/HomePage";
 import { useThemeContext } from "./theme/ThemeContextProvider";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import RegisterPage from "./pages/RegisterPage";
@@ -15,14 +15,17 @@ import TransactionsPage from "./pages/TransactionsPage";
 import CreateTransactionPage from "./pages/CreateTransactionPage";
 
 const App = () => {
-
   const { theme } = useThemeContext();
+  const location = useLocation();
+  
+  // Upravená podmínka pro zobrazení Navbar
+  const showNavbar = !["/dashboard", "/transactions", "/create", "/register", "/login"].includes(location.pathname);
 
   return (
     <ThemeProvider theme={theme}>
       <UserProvider>
         <CssBaseline />
-        <Navbar />
+        {showNavbar && <Navbar />}
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -33,7 +36,7 @@ const App = () => {
           <Route path="/create" element={<CreateTransactionPage />} />
         </Routes>
         <ToastContainer
-        theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}
+          theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}
         />
       </UserProvider>
     </ThemeProvider>

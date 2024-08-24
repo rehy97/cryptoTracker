@@ -1,33 +1,66 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, Grid, Avatar } from '@mui/material';
+import { 
+  Box, Typography, Paper, CircularProgress, Grid, Avatar, Chip, Divider, 
+  useMediaQuery, ToggleButton, ToggleButtonGroup, IconButton, Tab, Tabs
+} from '@mui/material';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@mui/material/styles';
+import { NumericFormat } from 'react-number-format';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import ReactApexChart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
+import StarIcon from '@mui/icons-material/Star';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+
+// Zástupné komponenty
+const PlaceholderSection: React.FC<{ title: string }> = ({ title }) => (
+  <Box sx={{ p: 2, border: '1px dashed grey', borderRadius: 2 }}>
+    <Typography variant="h6">{title}</Typography>
+    <Typography>This section is under development.</Typography>
+  </Box>
+);
+
+const NewsSection: React.FC = () => <PlaceholderSection title="News" />;
+const OrderBook: React.FC = () => <PlaceholderSection title="Order Book" />;
+const CommentSection: React.FC = () => <PlaceholderSection title="Comments" />;
+const EducationSection: React.FC = () => <PlaceholderSection title="Education" />;
+const ProfitCalculator: React.FC = () => <PlaceholderSection title="Profit Calculator" />;
+const SentimentIndicator: React.FC = () => <PlaceholderSection title="Market Sentiment" />;
 
 const CryptoDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [crypto, setCrypto] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [chartData, setChartData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<any>(null);
+    const [chartPeriod, setChartPeriod] = useState('7d');
+    const [darkMode, setDarkMode] = useState(theme.palette.mode === 'dark');
+    const [isWatchlisted, setIsWatchlisted] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
 
     useEffect(() => {
         const fetchCryptoDetail = async () => {
             try {
-                const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${id}`);
-                setCrypto(response.data);
+                const [cryptoResponse, chartResponse] = await Promise.all([
+                    axios.get(`https://api.coingecko.com/api/v3/coins/${id}`),
+                    axios.get(`https://api.coingecko.com/api/v3/coins/${id}/market_chart`, {
+                        params: { vs_currency: 'usd', days: chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 365 }
+                    })
+                ]);
 
-                const chartResponse = await axios.get(`https://api.coingecko.com/api/v3/coins/${id}/market_chart`, {
-                    params: {
-                        vs_currency: 'usd',
-                        days: 7
-                    }
-                });
+                setCrypto(cryptoResponse.data);
+
                 const formattedChartData = chartResponse.data.prices.map((price: any) => ({
-                    date: new Date(price[0]).toLocaleDateString(),
-                    price: price[1]
+                    x: new Date(price[0]).getTime(),
+                    y: price[1]
                 }));
+
                 setChartData(formattedChartData);
                 setLoading(false);
             } catch (error) {
@@ -37,7 +70,83 @@ const CryptoDetail: React.FC = () => {
         };
 
         fetchCryptoDetail();
-    }, [id]);
+    }, [id, chartPeriod]);
+
+    const handleChartPeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string) => {
+        if (newPeriod !== null) {
+            setChartPeriod(newPeriod);
+        }
+    };
+
+    const toggleDarkMode = () => {
+        setDarkMode(!darkMode);
+        // Zde by byla logika pro změnu tématu v celé aplikaci
+    };
+
+    const toggleWatchlist = () => {
+        setIsWatchlisted(!isWatchlisted);
+        // Zde by byla logika pro přidání/odebrání z watchlistu
+    };
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+    };
+
+    const chartOptions: ApexOptions = {
+        chart: {
+            type: 'area',
+            height: 350,
+            zoom: {
+                enabled: true,
+                type: 'x',
+                autoScaleYaxis: true
+            },
+            toolbar: {
+                show: true
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3,
+                stops: [0, 100]
+            }
+        },
+        xaxis: {
+            type: 'datetime',
+            tooltip: {
+                enabled: false
+            }
+        },
+        yaxis: {
+            labels: {
+                formatter: (value) => `$${value.toFixed(2)}`
+            }
+        },
+        tooltip: {
+            x: {
+                format: 'dd MMM yyyy'
+            },
+            y: {
+                formatter: function (val) {
+                    return `$${val.toFixed(2)}`;
+                }
+            }
+        },
+        theme: {
+            mode: darkMode ? 'dark' : 'light'
+        },
+        colors: [theme.palette.primary.main]
+    };
 
     if (loading) {
         return (
@@ -55,72 +164,127 @@ const CryptoDetail: React.FC = () => {
         );
     }
 
+    const priceChangeColor = crypto.market_data.price_change_percentage_24h >= 0 ? 'success.main' : 'error.main';
+    const PriceChangeIcon = crypto.market_data.price_change_percentage_24h >= 0 ? TrendingUpIcon : TrendingDownIcon;
+
     return (
-        <Box
-            sx={{
-                borderRadius: '8px',
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary,
-                boxShadow: 1,
-                p: 2,
-                mt: 2,
-            }}
-        >
-            <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar alt={crypto.name} src={crypto.image.large} sx={{ width: 50, height: 50, mr: 2 }} />
-                        <Typography variant="h4" component="div">
-                            {crypto.name} ({crypto.symbol.toUpperCase()})
+        <Box sx={{ maxWidth: '1200px', margin: '0 auto', p: 2 }}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: 'background.paper' }}>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar alt={crypto.name} src={crypto.image.large} sx={{ width: 60, height: 60, mr: 2 }} />
+                            <Box>
+                                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                                    {crypto.name}
+                                </Typography>
+                                <Chip label={crypto.symbol.toUpperCase()} color="primary" size="small" />
+                            </Box>
+                        </Box>
+                        <Box>
+                            <IconButton onClick={toggleWatchlist}>
+                                {isWatchlisted ? <StarIcon color="primary" /> : <StarOutlineIcon />}
+                            </IconButton>
+                            <IconButton>
+                                <NotificationsNoneIcon />
+                            </IconButton>
+                            <IconButton onClick={toggleDarkMode}>
+                                {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+                            </IconButton>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Typography variant="h3" component="div" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            <NumericFormat
+                                value={crypto.market_data.current_price.usd}
+                                displayType={'text'}
+                                thousandSeparator={true}
+                                prefix={'$'}
+                                decimalScale={2}
+                            />
                         </Typography>
-                    </Box>
-                    <Typography variant="h2" component="div" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        {crypto.market_data.current_price.usd.toLocaleString()} $
-                    </Typography>
-                    <Paper sx={{ p: 2, mb: 2 }}>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Market Cap:</span>
-                            <span>{crypto.market_data.market_cap.usd.toLocaleString()} $</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Fully Diluted Valuation:</span>
-                            <span>{crypto.market_data.fully_diluted_valuation?.usd.toLocaleString() || 'N/A'} $</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Volume (24h):</span>
-                            <span>{crypto.market_data.total_volume.usd.toLocaleString()} $</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Circulating Supply:</span>
-                            <span>{crypto.market_data.circulating_supply.toLocaleString()}</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Total Supply:</span>
-                            <span>{crypto.market_data.total_supply?.toLocaleString() || 'N/A'}</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Max Supply:</span>
-                            <span>{crypto.market_data.max_supply?.toLocaleString() || 'N/A'}</span>
-                        </Typography>
-                    </Paper>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <PriceChangeIcon sx={{ color: priceChangeColor, mr: 1 }} />
+                            <Typography variant="body1" sx={{ color: priceChangeColor, fontWeight: 'bold' }}>
+                                {crypto.market_data.price_change_percentage_24h.toFixed(2)}%
+                            </Typography>
+                        </Box>
+                        <Divider sx={{ my: 2 }} />
+                        <Typography variant="h6" gutterBottom>Market Stats</Typography>
+                        <Grid container spacing={1}>
+                            {[
+                                { label: 'Market Cap', value: crypto.market_data.market_cap.usd },
+                                { label: 'Fully Diluted Valuation', value: crypto.market_data.fully_diluted_valuation?.usd },
+                                { label: 'Volume (24h)', value: crypto.market_data.total_volume.usd },
+                                { label: 'Circulating Supply', value: crypto.market_data.circulating_supply },
+                                { label: 'Total Supply', value: crypto.market_data.total_supply },
+                                { label: 'Max Supply', value: crypto.market_data.max_supply },
+                            ].map((item, index) => (
+                                <Grid item xs={6} key={index}>
+                                    <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                        <NumericFormat
+                                            value={item.value}
+                                            displayType={'text'}
+                                            thousandSeparator={true}
+                                            prefix={item.label.includes('Supply') ? '' : '$'}
+                                            decimalScale={0}
+                                        />
+                                    </Typography>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Grid>
+                    <Grid item xs={12} md={8}>
+                        <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Price Chart</Typography>
+                                <ToggleButtonGroup
+                                    value={chartPeriod}
+                                    exclusive
+                                    onChange={handleChartPeriodChange}
+                                    size="small"
+                                >
+                                    <ToggleButton value="7d">7D</ToggleButton>
+                                    <ToggleButton value="30d">30D</ToggleButton>
+                                    <ToggleButton value="1y">1Y</ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+                            {chartData && (
+                                <Box sx={{ height: isMobile ? 300 : 400 }}>
+                                    <ReactApexChart
+                                        options={chartOptions}
+                                        series={[{ name: 'Price', data: chartData }]}
+                                        type="area"
+                                        height="100%"
+                                    />
+                                </Box>
+                            )}
+                        </Paper>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h5" gutterBottom>
-                            Price Chart (Last 7 days)
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip />
-                                <Line type="monotone" dataKey="price" stroke={theme.palette.primary.main} dot={false} strokeWidth={3} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </Paper>
-                </Grid>
-            </Grid>
+                
+                <Box sx={{ width: '100%', mt: 4 }}>
+                    <Tabs value={activeTab} onChange={handleTabChange} centered>
+                        <Tab label="News" />
+                        <Tab label="Order Book" />
+                        <Tab label="Comments" />
+                        <Tab label="Education" />
+                        <Tab label="Profit Calculator" />
+                    </Tabs>
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                    {activeTab === 0 && <NewsSection />}
+                    {activeTab === 1 && <OrderBook />}
+                    {activeTab === 2 && <CommentSection />}
+                    {activeTab === 3 && <EducationSection />}
+                    {activeTab === 4 && <ProfitCalculator />}
+                </Box>
+                
+                <Box sx={{ mt: 4 }}>
+                    <SentimentIndicator />
+                </Box>
+            </Paper>
         </Box>
     );
 };
