@@ -9,5 +9,6 @@ namespace backend.models
         public string LastName { get; set; } = string.Empty;
         public DateTime DateOfBirth { get; set; } = DateTime.Now;
         public List<Transaction> Transactions { get; set; } = new List<Transaction>();
+        public List<Portfolio> Portfolios { get; set; } = new List<Portfolio>();
     }
 }

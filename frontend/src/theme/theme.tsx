@@ -9,9 +9,6 @@ export const getDesignTokens = (mode: PaletteMode): ThemeOptions => {
         ? {
             primary: amber,
             secondary: deepOrange,
-            error: {
-              main: grey[900],
-            },
             background: {
               default: grey[100],
               paper: grey[50],
@@ -24,9 +21,6 @@ export const getDesignTokens = (mode: PaletteMode): ThemeOptions => {
         : {
             primary: amber,
             secondary: deepOrange,
-            error: {
-              main: grey[300],
-            },
             background: {
               default: grey[900],
               paper: grey[800],

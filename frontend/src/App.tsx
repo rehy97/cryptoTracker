@@ -33,7 +33,7 @@ const App = () => {
           <Route path="/crypto/:id" element={<CryptoDetailPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/create" element={<CreateTransactionPage />} />
+          <Route path="/create" element={<CreateTransactionPage type={null} cryptocurrencyId={null} />} />
         </Routes>
         <ToastContainer
           theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}

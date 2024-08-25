@@ -28,5 +28,19 @@ namespace backend.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("{cryptocurrencyId}")]
+        public async Task<IActionResult> GetCryptoById(string cryptocurrencyId)
+        {
+            try
+            {
+                var coin = await _coinService.GetCryptoById(cryptocurrencyId);
+                return Ok(coin);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

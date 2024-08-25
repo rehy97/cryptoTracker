@@ -13,6 +13,7 @@ namespace backend.db
         }
 
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Portfolio> Portfolios { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,15 +24,28 @@ namespace backend.db
                 .Property(t => t.Id)
                 .ValueGeneratedOnAdd();
 
-            // Define primary key
+            // Define primary key for Transaction
             modelBuilder.Entity<Transaction>()
                 .HasKey(t => t.Id);
 
-            // Define relationships
+            // Define relationships for Transaction
             modelBuilder.Entity<Transaction>()
                 .HasOne(t => t.User)
                 .WithMany(u => u.Transactions)
                 .HasForeignKey(t => t.UserId);
+
+            // Configure Portfolio entity
+            modelBuilder.Entity<Portfolio>()
+                .Property(p => p.Id)
+                .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<Portfolio>()
+                .HasKey(p => p.Id);
+
+            modelBuilder.Entity<Portfolio>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.Portfolios)
+                .HasForeignKey(p => p.UserId);
 
             // Seed roles
             List<IdentityRole> roles = new List<IdentityRole>

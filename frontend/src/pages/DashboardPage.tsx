@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -18,9 +18,33 @@ import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
 import CryptoDistributionChart from '../components/CryptoDistributionChart';
 import AddTransactionFab from '../components/AddTransactionFab';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+interface PortfolioItem {
+  cryptocurrencyId: string;
+  amount: number;
+  averageBuyPrice: number;
+  currentPrice: number;
+}
+
+interface CoinData {
+  id: string;
+  name: string;
+  symbol: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+  image: string;
+}
+
+interface PortfolioItemWithCoinData extends PortfolioItem {
+  coinData?: CoinData;
+}
+
 
 const DashboardPage = () => {
   const [mode, setMode] = useState<PaletteMode>('dark');
+  const navigate = useNavigate();
   const theme = React.useMemo(() => createTheme({
     palette: {
       mode,
@@ -31,6 +55,36 @@ const DashboardPage = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
+  const [portfolio, setPortfolio] = useState<PortfolioItemWithCoinData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPortfolioData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const portfolioResponse = await axios.get<PortfolioItem[]>('http://localhost:5221/api/Portfolio');
+      const portfolioWithCoinData = await Promise.all(
+        portfolioResponse.data.map(async (item) => {
+          try {
+            const coinResponse = await axios.get<CoinData>(`http://localhost:5221/api/Coin/${item.cryptocurrencyId}`);
+            return { ...item, coinData: coinResponse.data };
+          } catch (err) {
+            console.error(`Failed to fetch data for ${item.cryptocurrencyId}`, err);
+            return item;
+          }
+        })
+      );
+      setPortfolio(portfolioWithCoinData);
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to fetch portfolio data');
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPortfolioData();
+  }, [fetchPortfolioData]);
 
   const cryptos = [
     { id: 1, name: 'Bitcoin', symbol: 'BTC', amount: 2, valueUsd: 60000, change: 2.5, icon: '₿', price: 30000, color: '#F7931A' },
@@ -99,6 +153,10 @@ const DashboardPage = () => {
     setDrawerOpen(open);
   };
 
+  const handleTransactionClick = (cryptocurrencyId : string, type : string) => {
+    navigate(`/create`, { state: { cryptocurrencyId, type } });
+  };
+
   const drawerContent = (
     <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
       <List>
@@ -164,50 +222,70 @@ const DashboardPage = () => {
           <Grid item xs={12} md={4}>
             <CryptoDistributionChart cryptos={cryptos} />
           </Grid>
-            <Grid item xs={12} md={8}>
+          <Grid item xs={12}>
               <Paper sx={{ width: '100%', overflow: 'hidden' }} elevation={3}>
-                <Tabs value={selectedTab} onChange={(e, newValue) => setSelectedTab(newValue)} centered>
-                  <Tab label="Holdings" />
-                  <Tab label="Transactions" />
-                </Tabs>
-                {selectedTab === 0 && (
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+                    <CircularProgress />
+                  </Box>
+                ) : error ? (
+                  <Typography color="error" align="center">{error}</Typography>
+                ) : (
                   <Table sx={{ minWidth: 650 }} aria-label="crypto holdings table">
                     <TableHead>
                       <TableRow>
                         <TableCell>Name</TableCell>
                         <TableCell align="right">Amount</TableCell>
-                        <TableCell align="right">Value (USD)</TableCell>
+                        <TableCell align="right">Average Buy Price</TableCell>
+                        <TableCell align="right">Current Price</TableCell>
+                        <TableCell align="right">Current Value</TableCell>
                         <TableCell align="right">24h Change</TableCell>
+                        <TableCell align="right">Profit/Loss</TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {cryptos.map((crypto) => (
-                        <TableRow key={crypto.id} hover>
+                      {portfolio.map((item) => (
+                        <TableRow key={item.cryptocurrencyId} hover>
                           <TableCell component="th" scope="row">
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Avatar sx={{ mr: 2, bgcolor: crypto.color }}>{crypto.icon}</Avatar>
-                              <Box>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{crypto.name}</Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>({crypto.symbol})</Typography>
+                            {item.coinData ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <img src={item.coinData.image} alt={item.coinData.name} style={{ width: 24, height: 24, marginRight: 8 }} />
+                                {item.coinData.name} ({item.coinData.symbol.toUpperCase()})
                               </Box>
-                            </Box>
+                            ) : item.cryptocurrencyId}
                           </TableCell>
-                          <TableCell align="right">{crypto.amount}</TableCell>
-                          <TableCell align="right">${crypto.valueUsd.toLocaleString()}</TableCell>
+                          <TableCell align="right">{item.amount.toFixed(8)}</TableCell>
+                          <TableCell align="right">${item.averageBuyPrice.toFixed(2)}</TableCell>
+                          <TableCell align="right">${item.coinData?.current_price.toFixed(2) || 'N/A'}</TableCell>
                           <TableCell align="right">
-                            <Chip
-                              icon={crypto.change >= 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                              label={`${crypto.change}%`}
-                              color={crypto.change >= 0 ? 'success' : 'error'}
-                              variant="outlined"
-                            />
+                            ${item.coinData ? (item.amount * item.coinData.current_price).toFixed(2) : 'N/A'}
                           </TableCell>
                           <TableCell align="right">
-                            <Button startIcon={<AddIcon />} variant="contained" size="small" sx={{ mr: 1 }}>
+                            {item.coinData && (
+                              <Chip
+                                icon={item.coinData.price_change_percentage_24h > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                                label={`${item.coinData.price_change_percentage_24h.toFixed(2)}%`}
+                                color={item.coinData.price_change_percentage_24h > 0 ? 'success' : 'error'}
+                                variant="outlined"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            {item.coinData && (
+                              <Chip
+                                icon={item.coinData.current_price > item.averageBuyPrice ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                                label={`${((item.coinData.current_price - item.averageBuyPrice) / item.averageBuyPrice * 100).toFixed(2)}%`}
+                                color={item.coinData.current_price > item.averageBuyPrice ? 'success' : 'error'}
+                                variant="outlined"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            <Button onClick={() => handleTransactionClick(item.cryptocurrencyId, 'buy')} startIcon={<AddIcon />} variant="contained" size="small" sx={{ mr: 1 }}>
                               Buy
                             </Button>
-                            <Button startIcon={<RemoveIcon />} variant="outlined" size="small">
+                            <Button onClick={() => handleTransactionClick(item.cryptocurrencyId, 'sell')} startIcon={<RemoveIcon />} variant="outlined" size="small">
                               Sell
                             </Button>
                           </TableCell>
@@ -215,29 +293,6 @@ const DashboardPage = () => {
                       ))}
                     </TableBody>
                   </Table>
-                )}
-                {selectedTab === 1 && (
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>Recent Transactions</Typography>
-                    <List>
-                      <ListItem>
-                        <ListItemIcon><AddIcon color="success" /></ListItemIcon>
-                        <ListItemText 
-                          primary={<Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Bought 0.1 BTC</Typography>} 
-                          secondary="2023-08-24 14:30" 
-                        />
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>$3,000</Typography>
-                      </ListItem>
-                      <ListItem>
-                        <ListItemIcon><RemoveIcon color="error" /></ListItemIcon>
-                        <ListItemText 
-                          primary={<Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Sold 5 ETH</Typography>} 
-                          secondary="2023-08-23 09:15" 
-                        />
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>$10,000</Typography>
-                      </ListItem>
-                    </List>
-                  </Box>
                 )}
               </Paper>
             </Grid>

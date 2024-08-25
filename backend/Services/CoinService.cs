@@ -6,6 +6,7 @@ using backend.models;
 using System.Text.Json;
 using System.Net;
 using Microsoft.Extensions.Caching.Memory;
+using System.Xml.Linq;
 
 namespace backend.Services
 {
@@ -53,6 +54,46 @@ namespace backend.Services
             {
                 Console.WriteLine($"Error fetching coin list: {ex.Message}");
                 return _cache.Get<List<Coin>>(CacheKey) ?? new List<Coin>();
+            }
+        }
+
+        public async Task<Coin> GetCryptoById(string cryptocurrencyId)
+        {
+            try
+            {
+                var URL = new Uri($"{_baseUrl}coins/markets?vs_currency=usd&ids={cryptocurrencyId}&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d&locale=en");
+                using (var client = new WebClient())
+                {
+                    client.Headers.Add("Accepts", "application/json");
+                    client.Headers.Add("User-Agent", "Other");
+                    var coinJson = await client.DownloadStringTaskAsync(URL);
+
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    var coins = JsonSerializer.Deserialize<List<Coin>>(coinJson, options);
+
+                    if (coins != null && coins.Count > 0)
+                    {
+                        return coins[0];
+                    }
+                    else
+                    {
+                        throw new Exception($"No data found for cryptocurrency with id: {cryptocurrencyId}");
+                    }
+                }
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine($"Error fetching coin data: {e.Message}");
+                throw;
+            }
+            catch (JsonException e)
+            {
+                Console.WriteLine($"Error deserializing JSON: {e.Message}");
+                throw;
             }
         }
         public async Task<bool> CheckCryptoExists(string cryptocurrencyId)

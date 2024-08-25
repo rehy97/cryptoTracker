@@ -5,13 +5,20 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { fetchCryptoList } from '../utils/api';
 
-const CreateTransactionPage: React.FC = () => {
+interface CreateTransactionPageProps {
+    type : string | null;
+    cryptocurrencyId : string | null;
+}
+
+// Add CreateTransactionPageProps as a parameter to the functional component
+
+const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({type, cryptocurrencyId}) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        cryptocurrencyId: '',
+        cryptocurrencyId: cryptocurrencyId,
         date: '',
-        type: '',
+        type: type,
         amount: '',
         unitPrice: '',
     });
@@ -53,8 +60,8 @@ const CreateTransactionPage: React.FC = () => {
         console.log(formData);
 
         try {
-            const response = await axios.post('http://localhost:5221/api/Transaction', formData);
-            navigate(`/transactions/${response.data.id}`); // Redirect to transaction details page on successful creation
+            const response = await axios.post('http://localhost:5221/api/Portfolio/add-transaction', formData);
+            navigate(`/dashboard`); // Redirect to transaction details page on successful creation
         } catch (error) {
             console.error('Error creating transaction:', error);
             setError('Failed to create transaction. Please try again.'); // Display error message on failure
