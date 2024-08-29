@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Box, Card, CardContent, Typography, Chip, Button, Divider, ToggleButtonGroup, ToggleButton, LinearProgress, Tooltip } from '@mui/material';
-import { TrendingUpIcon, TrendingDownIcon, AlertCircleIcon, PieChartIcon, BarChartIcon, DollarSignIcon } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Box, Card, CardContent, Typography, Chip, Button, Divider, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+import { TrendingUp, TrendingDown, PieChart, BarChart, DollarSign } from 'lucide-react';
 
 const timePeriods = [
   { value: '24h', label: '24h' },
@@ -10,31 +10,86 @@ const timePeriods = [
   { value: '1y', label: '1Y' },
 ];
 
-interface PortfolioCardProps {
-  portfolioData: {
-    changes: {
-      [key: string]: number;
-    };
-    totalValue: number;
-    profitPercentage: number;
-    estimatedAnnualReturn: number;
-    realizedProfit: number;
-    marketSentiment: string;
-    alert: string;
+interface PortfolioItem {
+  cryptocurrencyId: string;
+  amount: number;
+  averageBuyPrice: number;
+  currentPrice: number;
+  coinData?: {
+    id: string;
+    name: string;
+    symbol: string;
+    current_price: number;
+    price_change_percentage_24h: number;
+    image: string;
   };
 }
 
-const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
+interface Transaction {
+  cryptocurrencyId: string;
+  amount: number;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  type: 'buy' | 'sell';
+  unitPrice: number;
+  totalPrice: number;
+}
+
+interface PortfolioCardProps {
+  portfolio: PortfolioItem[];
+  transactions: Transaction[];
+}
+
+const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('24h');
 
-  const handlePeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string) => {
+  const handlePeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string | null) => {
     if (newPeriod !== null) {
       setSelectedPeriod(newPeriod);
     }
   };
 
+  const portfolioMetrics = useMemo(() => {
+    const totalValue = portfolio.reduce((sum, item) => sum + (item.amount * (item.coinData?.current_price || 0)), 0);
+    const totalCost = portfolio.reduce((sum, item) => sum + (item.amount * item.averageBuyPrice), 0);
+    const unrealizedProfit = totalValue - totalCost;
+    const profitPercentage = (unrealizedProfit / totalCost) * 100;
+
+    const realizedProfit = transactions.reduce((sum, transaction) => {
+      if (transaction.type === 'sell') {
+        const buyPrice = portfolio.find(item => item.cryptocurrencyId === transaction.cryptocurrencyId)?.averageBuyPrice || 0;
+        return sum + (transaction.unitPrice - buyPrice) * transaction.amount;
+      }
+      return sum;
+    }, 0);
+
+    const totalProfit = unrealizedProfit + realizedProfit;
+    const totalInvestment = transactions.reduce((sum, transaction) => {
+      return transaction.type === 'buy' ? sum + transaction.totalPrice : sum;
+    }, 0);
+
+    const roi = (totalProfit / totalInvestment) * 100;
+
+    return {
+      totalValue,
+      unrealizedProfit,
+      realizedProfit,
+      profitPercentage,
+      roi,
+      totalProfit
+    };
+  }, [portfolio, transactions]);
+
   const getCurrentChange = () => {
-    return portfolioData.changes[selectedPeriod];
+    // Calculate the weighted average of 24h changes
+    const totalValue = portfolio.reduce((sum, item) => sum + (item.amount * (item.coinData?.current_price || 0)), 0);
+    const weightedChange = portfolio.reduce((sum, item) => {
+      const itemValue = item.amount * (item.coinData?.current_price || 0);
+      const itemWeight = itemValue / totalValue;
+      return sum + (itemWeight * (item.coinData?.price_change_percentage_24h || 0));
+    }, 0);
+    return weightedChange;
   };
 
   return (
@@ -44,7 +99,7 @@ const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
           Total Portfolio Value
         </Typography>
         <Typography variant="h3" sx={{ mb: 2, color: 'primary.main', fontWeight: 'bold' }}>
-          ${portfolioData.totalValue.toLocaleString()}
+          ${portfolioMetrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -61,8 +116,8 @@ const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
             ))}
           </ToggleButtonGroup>
           <Chip
-            icon={getCurrentChange() >= 0 ? <TrendingUpIcon size={16} /> : <TrendingDownIcon size={16} />}
-            label={`${getCurrentChange()}%`}
+            icon={getCurrentChange() >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            label={`${getCurrentChange().toFixed(2)}%`}
             color={getCurrentChange() >= 0 ? 'success' : 'error'}
             variant="filled"
             size="small"
@@ -75,26 +130,26 @@ const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
           Portfolio Metrics
         </Typography>
         <Box sx={{ mb: 2 }}>
-          <Tooltip title="Percentage of portfolio that is profit">
+          <Tooltip title="Total profit percentage (including realized and unrealized)">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
-                <PieChartIcon size={16} style={{ marginRight: '8px' }} /> Profit %:
+                <PieChart size={16} style={{ marginRight: '8px' }} /> Total Profit %:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                {portfolioData.profitPercentage}%
+                {portfolioMetrics.profitPercentage.toFixed(2)}%
               </Typography>
             </Box>
           </Tooltip>
         </Box>
         
         <Box sx={{ mb: 2 }}>
-          <Tooltip title="Estimated annual return based on current performance">
+          <Tooltip title="Return on Investment (ROI)">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
-                <BarChartIcon size={16} style={{ marginRight: '8px' }} /> Est. Annual Return:
+                <BarChart size={16} style={{ marginRight: '8px' }} /> ROI:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                {portfolioData.estimatedAnnualReturn}%
+                {portfolioMetrics.roi.toFixed(2)}%
               </Typography>
             </Box>
           </Tooltip>
@@ -104,10 +159,23 @@ const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
           <Tooltip title="Total realized profit from sold assets">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
-                <DollarSignIcon size={16} style={{ marginRight: '8px' }} /> Realized Profit:
+                <DollarSign size={16} style={{ marginRight: '8px' }} /> Realized Profit:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                ${portfolioData.realizedProfit.toLocaleString()}
+                ${portfolioMetrics.realizedProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          </Tooltip>
+        </Box>
+        
+        <Box sx={{ mb: 2 }}>
+          <Tooltip title="Unrealized profit (paper gains)">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
+                <DollarSign size={16} style={{ marginRight: '8px' }} /> Unrealized Profit:
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                ${portfolioMetrics.unrealizedProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
             </Box>
           </Tooltip>
@@ -120,7 +188,7 @@ const PortfolioCard = ({ portfolioData }: PortfolioCardProps) => {
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>Overall:</Typography>
-          <Chip label={portfolioData.marketSentiment} color="primary" size="small" />
+          <Chip label={getCurrentChange() >= 0 ? 'Bullish' : 'Bearish'} color="primary" size="small" />
         </Box>
       </CardContent>
       <Box sx={{ p: 2, bgcolor: 'background.default', mt: 'auto' }}>

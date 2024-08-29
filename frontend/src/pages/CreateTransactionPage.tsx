@@ -1,18 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, Button, TextField, Alert, MenuItem } from '@mui/material';
+import { Box, Typography, Container, Button, TextField, Alert, MenuItem, Autocomplete } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { fetchCryptoList } from '../utils/api';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
+import { TextFieldProps } from '@mui/material/TextField';
 
 interface CreateTransactionPageProps {
-    type : string | null;
-    cryptocurrencyId : string | null;
+    type: string | null;
+    cryptocurrencyId: string | null;
 }
 
-// Add CreateTransactionPageProps as a parameter to the functional component
+interface Cryptocurrency {
+    id: string;
+    name: string;
+    symbol: string;
+    image: string;
+    current_price: number;
+}
 
-const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({type, cryptocurrencyId}) => {
+const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cryptocurrencyId }) => {
     const theme = useTheme();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -24,7 +35,7 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({type, cryp
     });
 
     const [error, setError] = useState('');
-    const [cryptocurrencies, setCryptocurrencies] = useState<any[]>([]);
+    const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
 
     useEffect(() => {
         const fetchCryptocurrencies = async () => {
@@ -40,18 +51,37 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({type, cryp
     }, []);
 
     const fetchCryptoPrice = (cryptoId: string) => {
-        const crypto = cryptocurrencies.find((crypto: any) => crypto.id === cryptoId);
+        const crypto = cryptocurrencies.find((crypto) => crypto.id === cryptoId);
         return crypto ? crypto.current_price : 0;
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
+    
         setFormData((prevData) => ({
             ...prevData,
             [name]: value,
-            unitPrice: name === 'cryptocurrencyId' ? fetchCryptoPrice(value) : prevData.unitPrice
+            unitPrice: name === 'cryptocurrencyId' ? fetchCryptoPrice(value).toString() : prevData.unitPrice
         }));
+    };
+
+    const handleCryptoChange = (event: React.SyntheticEvent, value: Cryptocurrency | null) => {
+        if (value) {
+            setFormData((prevData) => ({
+                ...prevData,
+                cryptocurrencyId: value.id,
+                unitPrice: value.current_price.toString()
+            }));
+        }
+    };
+
+    const handleDateChange = (date: Dayjs | null) => {
+        if (date) {
+            setFormData((prevData) => ({
+                ...prevData,
+                date: date.format('YYYY-MM-DD')
+            }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,104 +99,102 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({type, cryp
     };
 
     return (
-        <Box
-            sx={{
-                pt: 8,
-                pb: 6,
-                backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-            }}
-        >
-            <Container maxWidth="sm">
-                <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
-                    Create Transaction
-                </Typography>
-                <Box
-                    component="form"
-                    sx={{
-                        borderRadius: '8px',
-                        p: 3,
-                        mt: 3,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 2,
-                    }}
-                    onSubmit={handleSubmit}
-                >
-                    {error && <Alert severity="error">{error}</Alert>}
-                    <TextField
-                        variant="outlined"
-                        fullWidth
-                        select
-                        label="Cryptocurrency"
-                        name="cryptocurrencyId"
-                        value={formData.cryptocurrencyId}
-                        onChange={handleChange}
-                        required
-                    >
-                        {cryptocurrencies.map((crypto: any) => (
-                            <MenuItem key={crypto.id} value={crypto.id}>
-                                {crypto.name} ({crypto.symbol.toUpperCase()})
-                            </MenuItem>
-                        ))}
-                    </TextField>
-                    <TextField
-                        variant="outlined"
-                        fullWidth
-                        label="Amount"
-                        name="amount"
-                        type="number"
-                        value={formData.amount}
-                        onChange={handleChange}
-                        required
-                    />
-                    <TextField
-                        variant="outlined"
-                        fullWidth
-                        label="Date"
-                        name="date"
-                        type="date"
-                        InputLabelProps={{ shrink: true }}
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                    />
-                    <TextField
-                        variant="outlined"
-                        fullWidth
-                        select
-                        label="Type"
-                        name="type"
-                        value={formData.type}
-                        onChange={handleChange}
-                        required
-                    >
-                        <MenuItem value="buy">buy</MenuItem>
-                        <MenuItem value="sell">sell</MenuItem>
-                    </TextField>
-                    <TextField
-                        variant="outlined"
-                        fullWidth
-                        label="Unit Price"
-                        name="unitPrice"
-                        type="number"
-                        value={formData.unitPrice}
-                        onChange={handleChange}
-                        required
-                        InputProps={{ readOnly: true }}
-                    />
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        sx={{ mt: 3, mb: 2 }}
-                    >
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box
+                sx={{
+                    pt: 8,
+                    pb: 6,
+                    backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
+                }}
+            >
+                <Container maxWidth="sm">
+                    <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
                         Create Transaction
-                    </Button>
-                </Box>
-            </Container>
-        </Box>
+                    </Typography>
+                    <Box
+                        component="form"
+                        sx={{
+                            borderRadius: '8px',
+                            p: 3,
+                            mt: 3,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2,
+                        }}
+                        onSubmit={handleSubmit}
+                    >
+                        {error && <Alert severity="error">{error}</Alert>}
+                        <Autocomplete
+                            options={cryptocurrencies}
+                            getOptionLabel={(option) => option.name}
+                            fullWidth
+                            renderInput={(params) => <TextField {...params} label="Cryptocurrency" variant="outlined" />}
+                            renderOption={(props, option) => (
+                                <Box component="li" sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
+                                    <img
+                                        loading="lazy"
+                                        width="20"
+                                        src={option.image}
+                                        alt={option.name}
+                                    />
+                                    {option.name} ({option.symbol.toUpperCase()})
+                                </Box>
+                            )}
+                            onChange={handleCryptoChange}
+                        />
+                        <TextField
+                            variant="outlined"
+                            fullWidth
+                            label="Amount"
+                            name="amount"
+                            type="number"
+                            value={formData.amount}
+                            onChange={handleChange}
+                            required
+                        />
+                        <DatePicker
+                            label="Date"
+                            value={formData.date ? dayjs(formData.date) : null}
+                            onChange={handleDateChange}
+                        />
+                        <TextField
+                            variant="outlined"
+                            fullWidth
+                            select
+                            label="Type"
+                            name="type"
+                            value={formData.type}
+                            onChange={handleChange}
+                            required
+                        >
+                            <MenuItem value="buy">buy</MenuItem>
+                            <MenuItem value="sell">sell</MenuItem>
+                        </TextField>
+                        <TextField
+                            variant="outlined"
+                            fullWidth
+                            label="Unit Price"
+                            name="unitPrice"
+                            type="number"
+                            value={formData.unitPrice}
+                            onChange={handleChange}
+                            required
+                            InputProps={{ readOnly: true }}
+                        />
+                        <Button
+                            type="submit"
+                            fullWidth
+                            variant="contained"
+                            color="primary"
+                            sx={{ mt: 3, mb: 2 }}
+                        >
+                            Create Transaction
+                        </Button>
+                    </Box>
+                </Container>
+            </Box>
+        </LocalizationProvider>
     );
 };
 

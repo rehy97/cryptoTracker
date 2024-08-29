@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using backend.Services;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,8 +51,9 @@ builder.Services.AddSwaggerGen(option =>
         }
     });
 });
-
-builder.Services.AddHttpClient<CoinService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHostedService<CoinRefreshService>();
+builder.Services.AddSingleton<CoinService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

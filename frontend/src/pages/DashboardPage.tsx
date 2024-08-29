@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -11,8 +10,6 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import ReactApexChart from 'react-apexcharts';
-import { ApexOptions } from 'apexcharts';
 import { amber } from '@mui/material/colors';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
@@ -41,6 +38,16 @@ interface PortfolioItemWithCoinData extends PortfolioItem {
   coinData?: CoinData;
 }
 
+interface Transaction {
+  cryptocurrencyId: string;
+  amount: number;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  type: 'buy' | 'sell';
+  unitPrice: number;
+  totalPrice: number;
+}
 
 const DashboardPage = () => {
   const [mode, setMode] = useState<PaletteMode>('dark');
@@ -56,6 +63,7 @@ const DashboardPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [portfolio, setPortfolio] = useState<PortfolioItemWithCoinData[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,9 +90,20 @@ const DashboardPage = () => {
     }
   }, []);
 
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const response = await axios.get<Transaction[]>('http://localhost:5221/api/Transaction');
+      setTransactions(response.data);
+    } catch (err) {
+      console.error('Failed to fetch transactions', err);
+      setError('Failed to fetch transaction data');
+    }
+  }, []);
+
   useEffect(() => {
     fetchPortfolioData();
-  }, [fetchPortfolioData]);
+    fetchTransactions();
+  }, [fetchPortfolioData, fetchTransactions]);
 
   const cryptos = [
     { id: 1, name: 'Bitcoin', symbol: 'BTC', amount: 2, valueUsd: 60000, change: 2.5, icon: '₿', price: 30000, color: '#F7931A' },
@@ -210,17 +229,18 @@ const DashboardPage = () => {
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
           <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <PortfolioCard portfolioData={portfolioData} />
+            <PortfolioCard portfolio={portfolio} transactions={transactions} />
           </Grid>
           <Grid item xs={12} md={8}>
             <PortfolioPerformanceChart 
-              performanceData={performanceData}
+              portfolio={portfolio}
+              transactions={transactions}
               theme={theme}
               mode={mode}
             />
           </Grid>
           <Grid item xs={12} md={4}>
-            <CryptoDistributionChart cryptos={cryptos} />
+            <CryptoDistributionChart portfolio={portfolio} />
           </Grid>
           <Grid item xs={12}>
               <Paper sx={{ width: '100%', overflow: 'hidden' }} elevation={3}>

@@ -1,44 +1,145 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, Typography, Box, ToggleButtonGroup, ToggleButton, Chip, Tooltip } from '@mui/material';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
-import { TrendingUpIcon, TrendingDownIcon, DollarSignIcon, PercentIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 
-const timePeriods = [
-  { value: '7d', label: '7D' },
-  { value: '1m', label: '1M' },
-  { value: '3m', label: '3M' },
-  { value: '1y', label: '1Y' },
-  { value: 'all', label: 'All' },
-];
+const timePeriods = ['7d', '1m', '3m', '1y', 'all'] as const;
+type TimePeriod = typeof timePeriods[number];
 
-interface PerformanceData {
+const timePeriodLabels: Record<TimePeriod, string> = {
+  '7d': '7D',
+  '1m': '1M',
+  '3m': '3M',
+  '1y': '1Y',
+  'all': 'All',
+};
+
+interface PortfolioItem {
+  cryptocurrencyId: string;
+  amount: number;
+  averageBuyPrice: number;
+  currentPrice: number;
+  coinData?: {
+    id: string;
+    name: string;
+    symbol: string;
+    current_price: number;
+    price_change_percentage_24h: number;
+    image: string;
+  };
+}
+
+interface Transaction {
+  cryptocurrencyId: string;
+  amount: number;
   date: string;
-  value: number;
+  type: 'buy' | 'sell';
+  unitPrice: number;
+  totalPrice: number;
 }
 
 interface PortfolioPerformanceChartProps {
-  performanceData: {
-    [key: string]: PerformanceData[];
-  };
+  portfolio: PortfolioItem[];
+  transactions: Transaction[];
   theme: any;
   mode: 'light' | 'dark';
 }
 
-const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ performanceData, theme, mode }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('1m');
+interface PerformanceDataPoint {
+  date: string;
+  value: number;
+}
 
-  const handlePeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string | null) => {
+interface PerformanceData {
+  '7d': PerformanceDataPoint[];
+  '1m': PerformanceDataPoint[];
+  '3m': PerformanceDataPoint[];
+  '1y': PerformanceDataPoint[];
+  'all': PerformanceDataPoint[];
+}
+
+const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ portfolio, transactions, theme, mode }) => {
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('1m');
+
+  const handlePeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: TimePeriod | null) => {
     if (newPeriod !== null) {
       setSelectedPeriod(newPeriod);
     }
   };
 
+  const performanceData = useMemo<PerformanceData>(() => {
+    console.log('Calculating performance data');
+    console.log('Portfolio:', portfolio);
+    console.log('Transactions:', transactions);
+
+    if (portfolio.length === 0 || transactions.length === 0) {
+      console.log('Portfolio or transactions are empty');
+      return {
+        '7d': [], '1m': [], '3m': [], '1y': [], 'all': []
+      };
+    }
+
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const earliestDate = new Date(sortedTransactions[0]?.date || new Date());
+    const latestDate = new Date();
+
+    const getDatesBetween = (start: Date, end: Date, interval: number) => {
+      const dates = [];
+      let currentDate = new Date(start);
+      while (currentDate <= end) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + interval);
+      }
+      return dates;
+    };
+
+    const calculatePortfolioValueAtDate = (date: Date) => {
+      const relevantTransactions = sortedTransactions.filter(t => new Date(t.date) <= date);
+      const holdings = {} as { [key: string]: number };
+
+      relevantTransactions.forEach(t => {
+        if (!holdings[t.cryptocurrencyId]) holdings[t.cryptocurrencyId] = 0;
+        holdings[t.cryptocurrencyId] += t.type === 'buy' ? t.amount : -t.amount;
+      });
+
+      return Object.entries(holdings).reduce((total, [cryptoId, amount]) => {
+        const coin = portfolio.find(p => p.cryptocurrencyId === cryptoId);
+        return total + (coin ? amount * coin.currentPrice : 0);
+      }, 0);
+    };
+
+    const generatePerformanceData = (start: Date, end: Date, interval: number) => {
+      const dates = getDatesBetween(start, end, interval);
+      return dates.map(date => ({
+        date: date.toISOString(),
+        value: calculatePortfolioValueAtDate(date)
+      }));
+    };
+
+    const now = new Date();
+    const result = {
+      '7d': generatePerformanceData(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), latestDate, 1),
+      '1m': generatePerformanceData(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), latestDate, 1),
+      '3m': generatePerformanceData(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), latestDate, 3),
+      '1y': generatePerformanceData(new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000), latestDate, 7),
+      'all': generatePerformanceData(earliestDate, latestDate, 30),
+    };
+
+    console.log('Generated performance data:', result);
+    return result;
+  }, [portfolio, transactions]);
+
   const currentData = performanceData[selectedPeriod];
-  const startValue = currentData[0].value;
-  const endValue = currentData[currentData.length - 1].value;
+  
+  useEffect(() => {
+    console.log('Current data for selected period:', currentData);
+  }, [currentData, selectedPeriod]);
+
+  const startValue = currentData[0]?.value ?? 0;
+  const endValue = currentData[currentData.length - 1]?.value ?? 0;
   const changeValue = endValue - startValue;
-  const changePercentage = ((endValue - startValue) / startValue) * 100;
+  const changePercentage = startValue !== 0 ? ((endValue - startValue) / startValue) * 100 : 0;
 
   const chartOptions: ApexOptions = {
     colors: [theme.palette.primary.main],
@@ -119,9 +220,10 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
   const series = [
     {
       name: "Portfolio Value",
-      data: currentData.map(data => data.value),
+      data: currentData.map(data => ({ x: new Date(data.date).getTime(), y: data.value })),
     }
   ];
+
 
   return (
     <Card elevation={3}>
@@ -135,8 +237,8 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
             size="small"
           >
             {timePeriods.map((period) => (
-              <ToggleButton key={period.value} value={period.value}>
-                {period.label}
+              <ToggleButton key={period} value={period}>
+                {timePeriodLabels[period]}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
@@ -144,7 +246,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Tooltip title="Current portfolio value">
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DollarSignIcon size={20} style={{ marginRight: '8px' }} />
+              <DollarSign size={20} style={{ marginRight: '8px' }} />
               <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 ${endValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Typography>
@@ -153,7 +255,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Value change">
               <Chip
-                icon={changeValue >= 0 ? <TrendingUpIcon size={16} /> : <TrendingDownIcon size={16} />}
+                icon={changeValue >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 label={`$${Math.abs(changeValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 color={changeValue >= 0 ? 'success' : 'error'}
                 variant="filled"
@@ -163,7 +265,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
             </Tooltip>
             <Tooltip title="Percentage change">
               <Chip
-                icon={<PercentIcon size={16} />}
+                icon={<Percent size={16} />}
                 label={`${changePercentage.toFixed(2)}%`}
                 color={changePercentage >= 0 ? 'success' : 'error'}
                 variant="filled"
@@ -172,12 +274,16 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
             </Tooltip>
           </Box>
         </Box>
-        <ReactApexChart 
-          options={chartOptions}
-          series={series}
-          type="area"
-          height={350}
-        />
+                {currentData.length > 0 ? (
+          <ReactApexChart 
+            options={chartOptions}
+            series={series}
+            type="area"
+            height={350}
+          />
+        ) : (
+          <Typography variant="body1" align="center">No data available for the selected period.</Typography>
+        )}
       </CardContent>
     </Card>
   );
