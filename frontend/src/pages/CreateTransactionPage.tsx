@@ -8,7 +8,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
-import { TextFieldProps } from '@mui/material/TextField';
 
 interface CreateTransactionPageProps {
     type: string | null;
@@ -61,7 +60,6 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cry
         setFormData((prevData) => ({
             ...prevData,
             [name]: value,
-            unitPrice: name === 'cryptocurrencyId' ? fetchCryptoPrice(value).toString() : prevData.unitPrice
         }));
     };
 
@@ -180,7 +178,6 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cry
                             value={formData.unitPrice}
                             onChange={handleChange}
                             required
-                            InputProps={{ readOnly: true }}
                         />
                         <Button
                             type="submit"

@@ -47,18 +47,22 @@ const CryptoDetail: React.FC = () => {
     useEffect(() => {
         const fetchCryptoDetail = async () => {
             try {
-                const [cryptoResponse, chartResponse] = await Promise.all([
-                    axios.get(`https://api.coingecko.com/api/v3/coins/${id}`),
-                    axios.get(`https://api.coingecko.com/api/v3/coins/${id}/market_chart`, {
-                        params: { vs_currency: 'usd', days: chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 365 }
+                const [assetResponse, historyResponse] = await Promise.all([
+                    axios.get(`https://api.coincap.io/v2/assets/${id}`),
+                    axios.get(`https://api.coincap.io/v2/assets/${id}/history`, {
+                        params: { 
+                            interval: chartPeriod === '7d' ? 'h1' : chartPeriod === '30d' ? 'h6' : 'd1',
+                            start: new Date(Date.now() - (chartPeriod === '7d' ? 7 : chartPeriod === '30d' ? 30 : 365) * 24 * 60 * 60 * 1000).getTime(),
+                            end: Date.now()
+                        }
                     })
                 ]);
 
-                setCrypto(cryptoResponse.data);
+                setCrypto(assetResponse.data.data);
 
-                const formattedChartData = chartResponse.data.prices.map((price: any) => ({
-                    x: new Date(price[0]).getTime(),
-                    y: price[1]
+                const formattedChartData = historyResponse.data.data.map((price: any) => ({
+                    x: new Date(price.time).getTime(),
+                    y: parseFloat(price.priceUsd)
                 }));
 
                 setChartData(formattedChartData);
@@ -71,7 +75,6 @@ const CryptoDetail: React.FC = () => {
 
         fetchCryptoDetail();
     }, [id, chartPeriod]);
-
     const handleChartPeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string) => {
         if (newPeriod !== null) {
             setChartPeriod(newPeriod);
@@ -164,8 +167,8 @@ const CryptoDetail: React.FC = () => {
         );
     }
 
-    const priceChangeColor = crypto.market_data.price_change_percentage_24h >= 0 ? 'success.main' : 'error.main';
-    const PriceChangeIcon = crypto.market_data.price_change_percentage_24h >= 0 ? TrendingUpIcon : TrendingDownIcon;
+    const priceChangeColor = parseFloat(crypto.changePercent24Hr) >= 0 ? 'success.main' : 'error.main';
+    const PriceChangeIcon = parseFloat(crypto.changePercent24Hr) >= 0 ? TrendingUpIcon : TrendingDownIcon;
 
     return (
         <Box sx={{ maxWidth: '1200px', margin: '0 auto', p: 2 }}>
@@ -173,12 +176,12 @@ const CryptoDetail: React.FC = () => {
                 <Grid container spacing={3}>
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar alt={crypto.name} src={crypto.image.large} sx={{ width: 60, height: 60, mr: 2 }} />
+                            <Avatar alt={crypto.name} src={`https://assets.coincap.io/assets/icons/${crypto.symbol.toLowerCase()}@2x.png`} sx={{ width: 60, height: 60, mr: 2 }} />
                             <Box>
                                 <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
                                     {crypto.name}
                                 </Typography>
-                                <Chip label={crypto.symbol.toUpperCase()} color="primary" size="small" />
+                                <Chip label={crypto.symbol} color="primary" size="small" />
                             </Box>
                         </Box>
                         <Box>
@@ -196,7 +199,7 @@ const CryptoDetail: React.FC = () => {
                     <Grid item xs={12} md={4}>
                         <Typography variant="h3" component="div" sx={{ fontWeight: 'bold', mb: 1 }}>
                             <NumericFormat
-                                value={crypto.market_data.current_price.usd}
+                                value={parseFloat(crypto.priceUsd)}
                                 displayType={'text'}
                                 thousandSeparator={true}
                                 prefix={'$'}
@@ -206,19 +209,17 @@ const CryptoDetail: React.FC = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <PriceChangeIcon sx={{ color: priceChangeColor, mr: 1 }} />
                             <Typography variant="body1" sx={{ color: priceChangeColor, fontWeight: 'bold' }}>
-                                {crypto.market_data.price_change_percentage_24h.toFixed(2)}%
+                                {parseFloat(crypto.changePercent24Hr).toFixed(2)}%
                             </Typography>
                         </Box>
                         <Divider sx={{ my: 2 }} />
                         <Typography variant="h6" gutterBottom>Market Stats</Typography>
                         <Grid container spacing={1}>
                             {[
-                                { label: 'Market Cap', value: crypto.market_data.market_cap.usd },
-                                { label: 'Fully Diluted Valuation', value: crypto.market_data.fully_diluted_valuation?.usd },
-                                { label: 'Volume (24h)', value: crypto.market_data.total_volume.usd },
-                                { label: 'Circulating Supply', value: crypto.market_data.circulating_supply },
-                                { label: 'Total Supply', value: crypto.market_data.total_supply },
-                                { label: 'Max Supply', value: crypto.market_data.max_supply },
+                                { label: 'Market Cap', value: parseFloat(crypto.marketCapUsd) },
+                                { label: 'Volume (24h)', value: parseFloat(crypto.volumeUsd24Hr) },
+                                { label: 'Circulating Supply', value: parseFloat(crypto.supply) },
+                                { label: 'Max Supply', value: parseFloat(crypto.maxSupply) },
                             ].map((item, index) => (
                                 <Grid item xs={6} key={index}>
                                     <Typography variant="body2" color="text.secondary">{item.label}</Typography>

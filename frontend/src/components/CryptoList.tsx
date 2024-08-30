@@ -17,7 +17,7 @@ import {
   Chip,
   useMediaQuery,
   TextField,
-  MenuItem,
+  Autocomplete,
   InputAdornment,
   IconButton,
   Tooltip,
@@ -31,43 +31,44 @@ import { useNavigate } from 'react-router-dom';
 
 const ITEMS_PER_PAGE = 10;
 
-// Static exchange rates (1 USD to X)
-const EXCHANGE_RATES = {
-  USD: 1,
-  EUR: 0.84,
-  GBP: 0.72,
-  JPY: 110.14,
-  CAD: 1.25,
-  AUD: 1.34,
-  CHF: 0.92,
-  CNY: 6.47,
-  INR: 74.37,
-  BRL: 5.25,
-};
-
 const CryptoList = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [cryptocurrencies, setCryptocurrencies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState<string>(() => {
+    return localStorage.getItem('preferredCurrency') || 'USD';
+  });
+  const [currencies, setCurrencies] = useState<{ [key: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [currencySearchTerm, setCurrencySearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleRowClick = (id: number) => {
+  const handleRowClick = (id: string) => {
     navigate(`/crypto/${id}`);
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await fetchCryptoList();
-      if (data && data.length > 0) {
-        setCryptocurrencies(data);
+      const [cryptoData, currencyData] = await Promise.all([
+        fetchCryptoList(),
+        fetch('https://api.exchangerate-api.com/v4/latest/USD').then(res => res.json())
+      ]);
+      
+      if (cryptoData && cryptoData.length > 0) {
+        setCryptocurrencies(cryptoData);
       } else {
-        setError("No data received from the API. Using cached data if available.");
+        setError("No cryptocurrency data received from the API. Using cached data if available.");
+      }
+
+      if (currencyData && currencyData.rates) {
+        setCurrencies(currencyData.rates);
+      } else {
+        setError("No currency data received from the API. Using USD only.");
+        setCurrencies({ USD: 1 });
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -81,8 +82,11 @@ const CryptoList = () => {
     fetchData();
   }, []);
 
-  const handleCurrencyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrency(event.target.value as keyof typeof EXCHANGE_RATES);
+  const handleCurrencyChange = (event: React.SyntheticEvent, newValue: string | null) => {
+    if (newValue) {
+      setCurrency(newValue);
+      localStorage.setItem('preferredCurrency', newValue);
+    }
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,13 +94,18 @@ const CryptoList = () => {
     setPage(1);
   };
 
+  const handleCurrencySearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrencySearchTerm(event.target.value);
+  };
+
   const handleRefresh = () => {
     fetchData();
   };
 
   const formatPrice = (priceUSD: number) => {
-    const rate = EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
-    return (priceUSD * rate).toFixed(2);
+    const rate = currencies[currency] || 1;
+    const convertedPrice = priceUSD * rate;
+    return convertedPrice.toFixed(2);
   };
 
   const formatPercentage = (value: number | null) => {
@@ -133,6 +142,12 @@ const CryptoList = () => {
     );
   }, [cryptocurrencies, searchTerm]);
 
+  const filteredCurrencies = useMemo(() => {
+    return Object.keys(currencies).filter(currencyCode =>
+      currencyCode.toLowerCase().includes(currencySearchTerm.toLowerCase())
+    );
+  }, [currencies, currencySearchTerm]);
+
   const paginatedCryptocurrencies = useMemo(() => {
     return filteredCryptocurrencies.slice(
       (page - 1) * ITEMS_PER_PAGE,
@@ -164,21 +179,22 @@ const CryptoList = () => {
           Featured Cryptocurrencies
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2}}>
-          <TextField
-            select
-            label="Currency"
+          <Autocomplete
             value={currency}
             onChange={handleCurrencyChange}
-            sx={{ width: 120 }}
-          >
-            {Object.keys(EXCHANGE_RATES).map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
+            options={filteredCurrencies}
+            renderInput={(params) => (
+              <TextField 
+                {...params} 
+                label="Currency" 
+                onChange={handleCurrencySearchChange}
+                placeholder="Search currency"
+              />
+            )}
+            sx={{ width: 200 }}
+          />
           <TextField
-            label="Search"
+            label="Search Crypto"
             variant="outlined"
             value={searchTerm}
             onChange={handleSearchChange}
@@ -205,12 +221,12 @@ const CryptoList = () => {
                 {!isSmallScreen && (
                   <>
                     <TableCell>Symbol</TableCell>
-                    <TableCell>Current Price</TableCell>
+                    <TableCell>Current Price ({currency})</TableCell>
                     <TableCell>1h</TableCell>
                     <TableCell>24h</TableCell>
                     <TableCell>7d</TableCell>
-                    <TableCell>Market Cap</TableCell>
-                    <TableCell>Volume (24h)</TableCell>
+                    <TableCell>Market Cap ({currency})</TableCell>
+                    <TableCell>Volume (24h) ({currency})</TableCell>
                   </>
                 )}
               </TableRow>
