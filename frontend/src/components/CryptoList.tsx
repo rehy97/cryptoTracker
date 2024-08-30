@@ -155,6 +155,11 @@ const CryptoList = () => {
     );
   }, [filteredCryptocurrencies, page]);
 
+  useEffect(() => {
+    // Resetovat stránku na 1, když se změní výsledky vyhledávání
+    setPage(1);
+  }, [filteredCryptocurrencies]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -178,107 +183,120 @@ const CryptoList = () => {
         <Typography variant="h4" component="h1" align="center" gutterBottom fontWeight="bold" color="primary">
           Featured Cryptocurrencies
         </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2}}>
-          <Autocomplete
-            value={currency}
-            onChange={handleCurrencyChange}
-            options={filteredCurrencies}
-            renderInput={(params) => (
-              <TextField 
-                {...params} 
-                label="Currency" 
-                onChange={handleCurrencySearchChange}
-                placeholder="Search currency"
-              />
-            )}
-            sx={{ width: 200 }}
-          />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2}}>
           <TextField
             label="Search Crypto"
             variant="outlined"
             value={searchTerm}
             onChange={handleSearchChange}
             InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
+              startAdornment: (
+                <InputAdornment position="start">
                   <SearchIcon />
                 </InputAdornment>
               ),
             }}
+            sx={{ flexGrow: 1, maxWidth: 300 }}
           />
-          <Tooltip title="Refresh data">
-            <IconButton onClick={handleRefresh} color="primary">
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Autocomplete
+              value={currency}
+              onChange={handleCurrencyChange}
+              options={Object.keys(currencies)}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="Currency" 
+                  onChange={handleCurrencySearchChange}
+                  placeholder="Search currency"
+                />
+              )}
+              sx={{ width: 200 }}
+            />
+            <Tooltip title="Refresh data">
+              <IconButton onClick={handleRefresh} color="primary">
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
-        <TableContainer component={Paper} elevation={0}>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell></TableCell>
-                <TableCell>Name</TableCell>
-                {!isSmallScreen && (
-                  <>
-                    <TableCell>Symbol</TableCell>
-                    <TableCell>Current Price ({currency})</TableCell>
-                    <TableCell>1h</TableCell>
-                    <TableCell>24h</TableCell>
-                    <TableCell>7d</TableCell>
-                    <TableCell>Market Cap ({currency})</TableCell>
-                    <TableCell>Volume (24h) ({currency})</TableCell>
-                  </>
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedCryptocurrencies.map((crypto) => (
-                <TableRow
-                  key={crypto.id}
-                  hover
-                  onClick={() => handleRowClick(crypto.id)}
-                  sx={{
-                    cursor: "pointer",
-                    '&:hover': {
-                      backgroundColor: `${theme.palette.primary.main}10`,
-                    },
-                  }}
-                >
-                  <TableCell>
-                    <Avatar alt={crypto.name} src={crypto.image} sx={{ width: 40, height: 40 }} />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle1" fontWeight="medium">{crypto.name}</Typography>
-                    {isSmallScreen && (
-                      <Typography variant="body2" color="text.secondary">
-                        {crypto.symbol.toUpperCase()} - {currency} {formatPrice(crypto.current_price)}
-                      </Typography>
+        {filteredCryptocurrencies.length > 0 ? (
+          <>
+            <TableContainer component={Paper} elevation={0}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell></TableCell>
+                    <TableCell>Name</TableCell>
+                    {!isSmallScreen && (
+                      <>
+                        <TableCell>Symbol</TableCell>
+                        <TableCell>Current Price ({currency})</TableCell>
+                        <TableCell>1h</TableCell>
+                        <TableCell>24h</TableCell>
+                        <TableCell>7d</TableCell>
+                        <TableCell>Market Cap ({currency})</TableCell>
+                        <TableCell>Volume (24h) ({currency})</TableCell>
+                      </>
                     )}
-                  </TableCell>
-                  {!isSmallScreen && (
-                    <>
-                      <TableCell>{crypto.symbol.toUpperCase()}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.current_price)}</TableCell>
-                      <TableCell>{formatPercentage(crypto.price_change_percentage_1h_in_currency)}</TableCell>
-                      <TableCell>{formatPercentage(crypto.price_change_percentage_24h_in_currency)}</TableCell>
-                      <TableCell>{formatPercentage(crypto.price_change_percentage_7d_in_currency)}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.market_cap)}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.total_volume)}</TableCell>
-                    </>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Pagination
-            count={Math.ceil(filteredCryptocurrencies.length / ITEMS_PER_PAGE)}
-            page={page}
-            onChange={(event, value) => setPage(value)}
-            color="primary"
-          />
-        </Box>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedCryptocurrencies.map((crypto) => (
+                    <TableRow
+                      key={crypto.id}
+                      hover
+                      onClick={() => handleRowClick(crypto.id)}
+                      sx={{
+                        cursor: "pointer",
+                        '&:hover': {
+                          backgroundColor: `${theme.palette.primary.main}10`,
+                        },
+                      }}
+                    >
+                      <TableCell>
+                        <Avatar alt={crypto.name} src={crypto.image} sx={{ width: 40, height: 40 }} />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="subtitle1" fontWeight="medium">{crypto.name}</Typography>
+                        {isSmallScreen && (
+                          <Typography variant="body2" color="text.secondary">
+                            {crypto.symbol.toUpperCase()} - {currency} {formatPrice(crypto.current_price)}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      {!isSmallScreen && (
+                        <>
+                          <TableCell>{crypto.symbol.toUpperCase()}</TableCell>
+                          <TableCell>{currency} {formatPrice(crypto.current_price)}</TableCell>
+                          <TableCell>{formatPercentage(crypto.price_change_percentage_1h_in_currency)}</TableCell>
+                          <TableCell>{formatPercentage(crypto.price_change_percentage_24h_in_currency)}</TableCell>
+                          <TableCell>{formatPercentage(crypto.price_change_percentage_7d_in_currency)}</TableCell>
+                          <TableCell>{currency} {formatPrice(crypto.market_cap)}</TableCell>
+                          <TableCell>{currency} {formatPrice(crypto.total_volume)}</TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Pagination
+                count={Math.ceil(filteredCryptocurrencies.length / ITEMS_PER_PAGE)}
+                page={page}
+                onChange={(event, value) => setPage(value)}
+                color="primary"
+              />
+            </Box>
+          </>
+        ) : (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+            <Typography variant="h6" color="text.secondary">
+              No cryptocurrencies found matching your search.
+            </Typography>
+          </Box>
+        )}
         <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
           <Alert onClose={() => setError(null)} severity="warning" sx={{ width: '100%' }}>
             {error}

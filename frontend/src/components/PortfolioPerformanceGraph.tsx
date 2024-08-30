@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, Typography, Box, ToggleButtonGroup, ToggleButton, Chip, Tooltip } from '@mui/material';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
@@ -69,12 +69,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
   };
 
   const performanceData = useMemo<PerformanceData>(() => {
-    console.log('Calculating performance data');
-    console.log('Portfolio:', portfolio);
-    console.log('Transactions:', transactions);
-
     if (portfolio.length === 0 || transactions.length === 0) {
-      console.log('Portfolio or transactions are empty');
       return {
         '7d': [], '1m': [], '3m': [], '1y': [], 'all': []
       };
@@ -105,7 +100,9 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
 
       return Object.entries(holdings).reduce((total, [cryptoId, amount]) => {
         const coin = portfolio.find(p => p.cryptocurrencyId === cryptoId);
-        return total + (coin ? amount * coin.currentPrice : 0);
+        // Use the current price from coinData if available, otherwise fall back to the currentPrice field
+        const price = coin?.coinData?.current_price ?? coin?.currentPrice ?? 0;
+        return total + (amount * price);
       }, 0);
     };
 
@@ -126,15 +123,10 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
       'all': generatePerformanceData(earliestDate, latestDate, 30),
     };
 
-    console.log('Generated performance data:', result);
     return result;
   }, [portfolio, transactions]);
 
   const currentData = performanceData[selectedPeriod];
-  
-  useEffect(() => {
-    console.log('Current data for selected period:', currentData);
-  }, [currentData, selectedPeriod]);
 
   const startValue = currentData[0]?.value ?? 0;
   const endValue = currentData[currentData.length - 1]?.value ?? 0;
@@ -224,7 +216,6 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
     }
   ];
 
-
   return (
     <Card elevation={3}>
       <CardContent>
@@ -274,7 +265,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
             </Tooltip>
           </Box>
         </Box>
-                {currentData.length > 0 ? (
+        {currentData.length > 0 ? (
           <ReactApexChart 
             options={chartOptions}
             series={series}

@@ -105,66 +105,6 @@ const DashboardPage = () => {
     fetchTransactions();
   }, [fetchPortfolioData, fetchTransactions]);
 
-  const cryptos = [
-    { id: 1, name: 'Bitcoin', symbol: 'BTC', amount: 2, valueUsd: 60000, change: 2.5, icon: '₿', price: 30000, color: '#F7931A' },
-    { id: 2, name: 'Ethereum', symbol: 'ETH', amount: 10, valueUsd: 40000, change: -1.2, icon: 'Ξ', price: 4000, color: '#627EEA' },
-    { id: 3, name: 'Litecoin', symbol: 'LTC', amount: 20, valueUsd: 8000, change: 0.8, icon: 'Ł', price: 400, color: '#BFBBBB' },
-    { id: 4, name: 'Ripple', symbol: 'XRP', amount: 100, valueUsd: 3000, change: 3.7, icon: '✕', price: 30, color: '#23292F' },
-  ];
-
-  const performanceData = {
-    '7d': [
-      { date: '2023-08-18', value: 100000 },
-      { date: '2023-08-19', value: 102000 },
-      { date: '2023-08-20', value: 103000 },
-      { date: '2023-08-21', value: 101000 },
-      { date: '2023-08-22', value: 104000 },
-      { date: '2023-08-23', value: 106000 },
-      { date: '2023-08-24', value: 105000 },
-    ],
-    '1m': [
-      { date: '2023-07-24', value: 95000 },
-      // ... (další data pro 1 měsíc)
-      { date: '2023-08-24', value: 105000 },
-    ],
-    '3m': [
-      { date: '2023-05-24', value: 85000 },
-      // ... (další data pro 3 měsíce)
-      { date: '2023-08-24', value: 105000 },
-    ],
-    '1y': [
-      { date: '2022-08-24', value: 70000 },
-      // ... (další data pro 1 rok)
-      { date: '2023-08-24', value: 105000 },
-    ],
-    'all': [
-      { date: '2021-08-24', value: 50000 },
-      // ... (další data pro celé období)
-      { date: '2023-08-24', value: 105000 },
-    ],
-  };
-
-  const notifications = [
-    { id: 1, message: 'Bitcoin price alert: BTC has increased by 5% in the last hour', read: false },
-    { id: 2, message: 'New feature: Portfolio analytics now available', read: true },
-  ];
-
-  const portfolioData = {
-    totalValue: 111000,
-    changes: {
-      '24h': 15.5,
-      '7d': 10.2,
-      '1m': 25.7,
-      '3m': 40.3,
-      '1y': 150.8
-    },
-    profitPercentage: 65,
-    estimatedAnnualReturn: 42.5,
-    realizedProfit: 12500,
-    marketSentiment: 'Bullish',
-    alert: 'Market volatility is high. Consider reviewing your portfolio.'
-  };
-
   const toggleDrawer = (open : any) => (event : any) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
@@ -207,14 +147,6 @@ const DashboardPage = () => {
           <Box>
             <IconButton color="inherit" sx={{ mr: 2 }}>
               <NotificationsIcon />
-              {notifications.filter(n => !n.read).length > 0 && (
-                <Chip
-                  label={notifications.filter(n => !n.read).length}
-                  color="error"
-                  size="small"
-                  sx={{ position: 'absolute', top: 0, right: 0 }}
-                />
-              )}
             </IconButton>
             <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit">
               {mode === 'dark' ? '🌞' : '🌙'}
