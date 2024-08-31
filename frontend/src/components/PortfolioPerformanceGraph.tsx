@@ -213,7 +213,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
     },
     theme: {
       mode: mode
-    }
+    },
   };
 
   const series = [

@@ -160,6 +160,7 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cry
                             label="Date"
                             value={formData.date ? dayjs(formData.date) : null}
                             onChange={handleDateChange}
+                            sx={{ width: "100%" }}
                         />
                         <TextField
                             variant="outlined"
