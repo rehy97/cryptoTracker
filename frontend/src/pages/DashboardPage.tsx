@@ -10,6 +10,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { amber } from '@mui/material/colors';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
@@ -18,6 +19,7 @@ import AddTransactionFab from '../components/AddTransactionFab';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import TopMoversCard from '../components/TopMoversCard';
+import { useAuth } from '../context/useAuth';
 
 interface PortfolioItem {
   cryptocurrencyId: string;
@@ -55,6 +57,7 @@ interface Transaction {
 }
 
 const DashboardPage = () => {
+  const { user, logout} = useAuth();
   const [mode, setMode] = useState<PaletteMode>('dark');
   const [selectedTimeFrame, setSelectedTimeFrame] = useState('24h');
   const navigate = useNavigate();
@@ -147,16 +150,22 @@ const DashboardPage = () => {
           <IconButton onClick={toggleDrawer(true)} edge="start" color="inherit" aria-label="menu">
             <MenuIcon />
           </IconButton>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            Crypto Dashboard
-          </Typography>
-          <Box>
-            <IconButton color="inherit" sx={{ mr: 2 }}>
-              <NotificationsIcon />
-            </IconButton>
-            <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit">
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="body1" sx={{ mr: 2 }}>
+              {user?.username}
+            </Typography>
+            <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit" sx={{ mr: 2 }}>
               {mode === 'dark' ? '🌞' : '🌙'}
             </IconButton>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<LogoutIcon />}
+              onClick={logout}
+              size='small'
+            >
+              Logout
+            </Button>
           </Box>
         </Box>
 

@@ -2,13 +2,13 @@ export type UserProfileToken = {
     dateOfBirth: any;
     lastName: any;
     firstName: any;
-    userName: string;
+    username: string;
     email: string;
     token: string;
 };
 
 export type UserProfile = {
-    userName: string;
+    username: string;
     firstName: string;
     lastName: string;
     email: string;

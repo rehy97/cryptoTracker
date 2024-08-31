@@ -56,7 +56,7 @@ export const UserProvider = ({ children }: Props) => {
             const response = await registerAPI(username, firstName, lastName, email, password, dateOfBirth);
             if (response && response.data) {
                 const userObj = {
-                    userName: response.data.userName,
+                    username: response.data.username,
                     firstName: response.data.firstName,
                     lastName: response.data.lastName,
                     email: response.data.email,
@@ -85,7 +85,7 @@ export const UserProvider = ({ children }: Props) => {
             const response = await loginAPI(username, password);
             if (response) {
                 const userObj = {
-                    userName: response.data.userName,
+                    username: response.data.username,
                     firstName: response.data.firstName,
                     lastName: response.data.lastName,
                     email: response.data.email,
