@@ -102,13 +102,14 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cry
                 sx={{
                     pt: 8,
                     pb: 6,
+                    minHeight: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
                     backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
                 }}
             >
                 <Container maxWidth="sm">
-                    <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
-                        Create Transaction
-                    </Typography>
                     <Box
                         component="form"
                         sx={{
@@ -119,9 +120,13 @@ const CreateTransactionPage: React.FC<CreateTransactionPageProps> = ({ type, cry
                             flexDirection: 'column',
                             alignItems: 'center',
                             gap: 2,
+                            border: `1px solid ${theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)'}`,
                         }}
                         onSubmit={handleSubmit}
                     >
+                    <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
+                        Create Transaction
+                    </Typography>
                         {error && <Alert severity="error">{error}</Alert>}
                         <Autocomplete
                             options={cryptocurrencies}
