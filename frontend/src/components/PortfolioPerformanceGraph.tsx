@@ -4,10 +4,11 @@ import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
 
-const timePeriods = ['7d', '1m', '3m', '1y', 'all'] as const;
+const timePeriods = ['24h', '7d', '1m', '3m', '1y', 'all'] as const;
 type TimePeriod = typeof timePeriods[number];
 
 const timePeriodLabels: Record<TimePeriod, string> = {
+  '24h': '24H',
   '7d': '7D',
   '1m': '1M',
   '3m': '3M',
@@ -25,7 +26,11 @@ interface PortfolioItem {
     name: string;
     symbol: string;
     current_price: number;
-    price_change_percentage_24h: number;
+    price_change_percentage_1h_in_currency: number;
+    price_change_percentage_24h_in_currency: number;
+    price_change_percentage_7d_in_currency: number;
+    price_change_percentage_30d_in_currency: number;
+    price_change_percentage_1y_in_currency: number;
     image: string;
   };
 }
@@ -52,6 +57,7 @@ interface PerformanceDataPoint {
 }
 
 interface PerformanceData {
+  '24h': PerformanceDataPoint[];
   '7d': PerformanceDataPoint[];
   '1m': PerformanceDataPoint[];
   '3m': PerformanceDataPoint[];
@@ -71,7 +77,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
   const performanceData = useMemo<PerformanceData>(() => {
     if (portfolio.length === 0 || transactions.length === 0) {
       return {
-        '7d': [], '1m': [], '3m': [], '1y': [], 'all': []
+        '24h': [] ,'7d': [], '1m': [], '3m': [], '1y': [], 'all': []
       };
     }
 
@@ -116,6 +122,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
 
     const now = new Date();
     const result = {
+      '24h': generatePerformanceData(new Date(now.getTime() - 24 * 60 * 60 * 1000), latestDate, 1),
       '7d': generatePerformanceData(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), latestDate, 1),
       '1m': generatePerformanceData(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), latestDate, 1),
       '3m': generatePerformanceData(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), latestDate, 3),
@@ -220,7 +227,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
     <Card elevation={3}>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Portfolio Performance</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Portfolio Performance</Typography>
           <ToggleButtonGroup
             value={selectedPeriod}
             exclusive
@@ -235,14 +242,6 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
           </ToggleButtonGroup>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Tooltip title="Current portfolio value">
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DollarSign size={20} style={{ marginRight: '8px' }} />
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                ${endValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Typography>
-            </Box>
-          </Tooltip>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title="Value change">
               <Chip

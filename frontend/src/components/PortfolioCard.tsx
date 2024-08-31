@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Card, CardContent, Typography, Chip, Button, Divider, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Chip, Button, Divider, ToggleButtonGroup, ToggleButton, Tooltip, CircularProgress } from '@mui/material';
 import { TrendingUp, TrendingDown, PieChart, BarChart, DollarSign } from 'lucide-react';
+import axios from 'axios';
 
 const timePeriods = [
   { value: '24h', label: '24h' },
@@ -20,7 +21,11 @@ interface PortfolioItem {
     name: string;
     symbol: string;
     current_price: number;
-    price_change_percentage_24h: number;
+    price_change_percentage_1h_in_currency: number;
+    price_change_percentage_24h_in_currency: number;
+    price_change_percentage_7d_in_currency: number;
+    price_change_percentage_30d_in_currency: number;
+    price_change_percentage_1y_in_currency: number;
     image: string;
   };
 }
@@ -41,8 +46,50 @@ interface PortfolioCardProps {
   transactions: Transaction[];
 }
 
+interface FearAndGreedData {
+  name: string;
+  data: {
+    value: string;
+    value_classification: string;
+    timestamp: string;
+    time_until_update: string;
+  }[];
+  metadata: {
+    error: string | null;
+  };
+}
+
 const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('24h');
+  const [fearAndGreedIndex, setFearAndGreedIndex] = useState<FearAndGreedData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFearAndGreedIndex = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get<FearAndGreedData>('http://localhost:5221/api/FearAndGreedIndex');
+        console.log(response.data);
+        setFearAndGreedIndex(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch Fear and Greed Index', err);
+        setError('Failed to fetch market sentiment data');
+        setLoading(false);
+      }
+    };
+
+    fetchFearAndGreedIndex();
+  }, []);
+
+  const getFearAndGreedColor = (value: number) => {
+    if (value <= 20) return 'error';
+    if (value <= 40) return 'warning';
+    if (value <= 60) return 'info';
+    if (value <= 80) return 'success';
+    return 'success';
+  };
 
   const handlePeriodChange = (event: React.MouseEvent<HTMLElement>, newPeriod: string | null) => {
     if (newPeriod !== null) {
@@ -82,12 +129,11 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }
   }, [portfolio, transactions]);
 
   const getCurrentChange = () => {
-    // Calculate the weighted average of 24h changes
     const totalValue = portfolio.reduce((sum, item) => sum + (item.amount * (item.coinData?.current_price || 0)), 0);
     const weightedChange = portfolio.reduce((sum, item) => {
       const itemValue = item.amount * (item.coinData?.current_price || 0);
       const itemWeight = itemValue / totalValue;
-      return sum + (itemWeight * (item.coinData?.price_change_percentage_24h || 0));
+      return sum + (itemWeight * (item.coinData?.price_change_percentage_24h_in_currency || 0));
     }, 0);
     return weightedChange;
   };
@@ -186,10 +232,35 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }
         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
           Market Sentiment
         </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>Overall:</Typography>
-          <Chip label={getCurrentChange() >= 0 ? 'Bullish' : 'Bearish'} color="primary" size="small" />
-        </Box>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : error ? (
+          <Typography color="error" variant="body2">{error}</Typography>
+        ) : fearAndGreedIndex && fearAndGreedIndex.data.length > 0 ? (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Fear & Greed Index:</Typography>
+              <Tooltip title={`Updated: ${new Date(parseInt(fearAndGreedIndex.data[0].timestamp) * 1000).toLocaleString()}`}>
+                <Chip 
+                  label={`${fearAndGreedIndex.data[0].value} - ${fearAndGreedIndex.data[0].value_classification}`} 
+                  color={getFearAndGreedColor(parseInt(fearAndGreedIndex.data[0].value))}
+                  size="small" 
+                />
+              </Tooltip>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Portfolio Trend:</Typography>
+              <Chip 
+                icon={getCurrentChange() >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                label={getCurrentChange() >= 0 ? 'Bullish' : 'Bearish'} 
+                color={getCurrentChange() >= 0 ? 'success' : 'error'}
+                size="small" 
+              />
+            </Box>
+          </>
+        ) : null}
       </CardContent>
       <Box sx={{ p: 2, bgcolor: 'background.default', mt: 'auto' }}>
         <Button variant="contained" fullWidth sx={{ borderRadius: 2, textTransform: 'none' }}>

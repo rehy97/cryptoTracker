@@ -13,7 +13,11 @@ interface PortfolioItemWithCoinData {
     name: string;
     symbol: string;
     current_price: number;
-    price_change_percentage_24h: number;
+    price_change_percentage_1h_in_currency: number;
+    price_change_percentage_24h_in_currency: number;
+    price_change_percentage_7d_in_currency: number;
+    price_change_percentage_30d_in_currency: number;
+    price_change_percentage_1y_in_currency: number;
     image: string;
   };
 }
@@ -54,7 +58,7 @@ const CryptoDistributionChart: React.FC<CryptoDistributionChartProps> = ({ portf
   return (
     <Card elevation={3}>
       <CardContent>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>Crypto Distribution</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'text.secondary' }}>Crypto Distribution</Typography>
         <Box sx={{ display: 'flex', height: 300 }}>
           <ResponsiveContainer width="50%" height="100%">
             <PieChart>
@@ -133,18 +137,6 @@ const CryptoDistributionChart: React.FC<CryptoDistributionChartProps> = ({ portf
                         </React.Fragment>
                       }
                     />
-                    {item.coinData && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                        {item.coinData.price_change_percentage_24h > 0 ? (
-                          <TrendingUp size={16} color="green" />
-                        ) : (
-                          <TrendingDown size={16} color="red" />
-                        )}
-                        <Typography variant="body2" color={item.coinData.price_change_percentage_24h > 0 ? 'green' : 'red'} sx={{ ml: 0.5 }}>
-                          {item.coinData.price_change_percentage_24h.toFixed(2)}%
-                        </Typography>
-                      </Box>
-                    )}
                   </ListItem>
                 );
               })}

@@ -92,5 +92,11 @@ public class Coin
 
     [JsonPropertyName("price_change_percentage_7d_in_currency")]
     public double? PriceChangePercentage7dInCurrency { get; set; }
+
+    [JsonPropertyName("price_change_percentage_30d_in_currency")]
+    public double? PriceChangePercentage30dInCurrency { get; set; }
+
+    [JsonPropertyName("price_change_percentage_1y_in_currency")]
+    public double? PriceChangePercentage1yInCurrency { get; set; }
 }
 }

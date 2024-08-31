@@ -17,6 +17,7 @@ import CryptoDistributionChart from '../components/CryptoDistributionChart';
 import AddTransactionFab from '../components/AddTransactionFab';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import TopMoversCard from '../components/TopMoversCard';
 
 interface PortfolioItem {
   cryptocurrencyId: string;
@@ -30,7 +31,11 @@ interface CoinData {
   name: string;
   symbol: string;
   current_price: number;
-  price_change_percentage_24h: number;
+  price_change_percentage_1h_in_currency: number;
+  price_change_percentage_24h_in_currency: number;
+  price_change_percentage_7d_in_currency: number;
+  price_change_percentage_30d_in_currency: number;
+  price_change_percentage_1y_in_currency: number;
   image: string;
 }
 
@@ -51,6 +56,7 @@ interface Transaction {
 
 const DashboardPage = () => {
   const [mode, setMode] = useState<PaletteMode>('dark');
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState('24h');
   const navigate = useNavigate();
   const theme = React.useMemo(() => createTheme({
     palette: {
@@ -174,6 +180,18 @@ const DashboardPage = () => {
           <Grid item xs={12} md={4}>
             <CryptoDistributionChart portfolio={portfolio} />
           </Grid>
+          <Grid item xs={12} md={4}>
+              <TopMoversCard 
+                title="Top Gainers"
+                type="gainers"
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TopMoversCard 
+                title="Top Losers"
+                type="losers"
+              />
+            </Grid>
           <Grid item xs={12}>
               <Paper sx={{ width: '100%', overflow: 'hidden' }} elevation={3}>
                 {loading ? (
@@ -216,9 +234,9 @@ const DashboardPage = () => {
                           <TableCell align="right">
                             {item.coinData && (
                               <Chip
-                                icon={item.coinData.price_change_percentage_24h > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                                label={`${item.coinData.price_change_percentage_24h.toFixed(2)}%`}
-                                color={item.coinData.price_change_percentage_24h > 0 ? 'success' : 'error'}
+                                icon={item.coinData.price_change_percentage_24h_in_currency > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                                label={`${item.coinData.price_change_percentage_24h_in_currency.toFixed(2)}%`}
+                                color={item.coinData.price_change_percentage_24h_in_currency> 0 ? 'success' : 'error'}
                                 variant="outlined"
                               />
                             )}
