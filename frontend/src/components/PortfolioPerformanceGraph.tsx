@@ -224,7 +224,6 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
   ];
 
   return (
-    <Card elevation={3}>
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>Portfolio Performance</Typography>
@@ -269,13 +268,12 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
             options={chartOptions}
             series={series}
             type="area"
-            height={350}
+            height={390}
           />
         ) : (
           <Typography variant="body1" align="center">No data available for the selected period.</Typography>
         )}
       </CardContent>
-    </Card>
   );
 };
 

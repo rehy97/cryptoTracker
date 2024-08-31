@@ -56,7 +56,6 @@ const CryptoDistributionChart: React.FC<CryptoDistributionChartProps> = ({ portf
   const colors = ['#F7931A', '#627EEA', '#BFBBBB', '#23292F', '#006AFF', '#2775CA', '#3C3C3D', '#26A17B'];
 
   return (
-    <Card elevation={3}>
       <CardContent>
         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'text.secondary' }}>Crypto Distribution</Typography>
         <Box sx={{ display: 'flex', height: 300 }}>
@@ -144,7 +143,6 @@ const CryptoDistributionChart: React.FC<CryptoDistributionChartProps> = ({ portf
           </Box>
         </Box>
       </CardContent>
-    </Card>
   );
 };
 
