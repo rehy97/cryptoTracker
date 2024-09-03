@@ -11,6 +11,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Add this line
 import { amber } from '@mui/material/colors';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
@@ -99,6 +100,11 @@ const DashboardPage = () => {
     }
   }, []);
 
+  const handleNavigation = (path : string) => {
+    navigate(path);
+    setDrawerOpen(false);
+  };
+
   const fetchTransactions = useCallback(async () => {
     try {
       const response = await axios.get<Transaction[]>('http://localhost:5221/api/Transaction');
@@ -126,16 +132,20 @@ const DashboardPage = () => {
   };
 
   const drawerContent = (
-    <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
+    <Box sx={{ width: 250 }} role="presentation">
       <List>
-        {['Dashboard', 'Portfolio', 'Market', 'Settings'].map((text, index) => (
-          <ListItem button key={text}>
+        {[
+          { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+          { text: 'Portfolio', icon: <AccountBalanceWalletIcon />, path: '/portfolio' },
+          { text: 'Market', icon: <ShowChartIcon />, path: '/integration' },
+          { text: 'Transactions', icon: <SwapHorizIcon />, path: '/transactions' },
+          { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+        ].map((item) => (
+          <ListItem button key={item.text} onClick={() => handleNavigation(item.path)}>
             <ListItemIcon>
-              {index === 0 ? <DashboardIcon /> : 
-               index === 1 ? <AccountBalanceWalletIcon /> : 
-               index === 2 ? <ShowChartIcon /> : <SettingsIcon />}
+              {item.icon}
             </ListItemIcon>
-            <ListItemText primary={text} />
+            <ListItemText primary={item.text} />
           </ListItem>
         ))}
       </List>
@@ -212,7 +222,7 @@ const DashboardPage = () => {
           </Paper>
         </Grid>
         <Grid item xs={12}>
-          <Paper sx={{ width: '100%', overflow: 'hidden' }} elevation={3}>
+          <Paper sx={{ width: '100%', overflow: 'hidden' }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
                 <CircularProgress />

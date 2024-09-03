@@ -139,7 +139,7 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }
   };
 
   return (
-    <Card elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: 2, overflow: 'hidden' }}>
       <CardContent sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
           Total Portfolio Value
@@ -205,7 +205,7 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }
           <Tooltip title="Total realized profit from sold assets">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
-                <DollarSign size={16} style={{ marginRight: '8px' }} /> Realized Profit:
+                <DollarSign size={16} style={{ marginRight: '8px' }} /> Realized Profit/Loss:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 ${portfolioMetrics.realizedProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -218,7 +218,7 @@ const PortfolioCard: React.FC<PortfolioCardProps> = ({ portfolio, transactions }
           <Tooltip title="Unrealized profit (paper gains)">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>
-                <DollarSign size={16} style={{ marginRight: '8px' }} /> Unrealized Profit:
+                <DollarSign size={16} style={{ marginRight: '8px' }} /> Unrealized Profit/Loss:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 ${portfolioMetrics.unrealizedProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

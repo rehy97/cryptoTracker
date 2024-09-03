@@ -161,6 +161,7 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
           speed: 350
         }
       },
+      background: '#1E1E1E', // Zde nastavte požadovanou barvu pozadí
     },
     dataLabels: {
       enabled: false

@@ -13,6 +13,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { UserProvider } from "./context/useAuth";
 import TransactionsPage from "./pages/TransactionsPage";
 import CreateTransactionPage from "./pages/CreateTransactionPage";
+import IntegrationPage from "./pages/IntegrationPage";
 
 const App = () => {
   const { theme } = useThemeContext();
@@ -33,6 +34,7 @@ const App = () => {
           <Route path="/crypto/:id" element={<CryptoDetailPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/integration" element={<IntegrationPage />} />
           <Route path="/create" element={<CreateTransactionPage type={null} cryptocurrencyId={null} />} />
         </Routes>
         <ToastContainer
