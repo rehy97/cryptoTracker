@@ -42,5 +42,19 @@ namespace backend.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("symbol/{symbol}")]
+        public async Task<IActionResult> GetCryptoBySymbol(string symbol)
+        {
+            try
+            {
+                var coin = await _coinService.GetCryptoBySymbol(symbol);
+                return Ok(coin);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

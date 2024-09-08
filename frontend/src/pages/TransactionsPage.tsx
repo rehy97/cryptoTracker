@@ -128,7 +128,7 @@ const TransactionsPage: React.FC = () => {
   };
 
   const getCryptoInfo = useCallback((id: string) => {
-    return cryptocurrencies.find(crypto => crypto.id === id) || { symbol: id, name: id, image: '' };
+    return cryptocurrencies.find(crypto => crypto.id === id) || { symbol: id, name: '', image: '' };
   }, [cryptocurrencies]);
 
   const filteredAndSortedTransactions = useMemo(() => {
@@ -136,8 +136,8 @@ const TransactionsPage: React.FC = () => {
       .filter(t => 
         (filterType === 'all' || t.type === filterType) &&
         (filterCrypto === 'all' || t.cryptocurrencyId === filterCrypto) &&
-        (t.cryptocurrencyId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         getCryptoInfo(t.cryptocurrencyId).name.toLowerCase().includes(searchTerm.toLowerCase()))
+        ((t.cryptocurrencyId?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+         (getCryptoInfo(t.cryptocurrencyId)?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()))
       )
       .sort((a, b) => {
         const dateA = new Date(a.date).getTime();
@@ -145,6 +145,7 @@ const TransactionsPage: React.FC = () => {
         return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
       });
   }, [transactions, filterType, filterCrypto, searchTerm, sortOrder, getCryptoInfo]);
+
 
   const paginatedTransactions = useMemo(() => {
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
@@ -298,7 +299,7 @@ const TransactionsPage: React.FC = () => {
                               sx={{ width: 32, height: 32, mr: 1 }}
                             />
                             <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'common.white' }}>
-                              {cryptoInfo.symbol.toUpperCase()}
+                              {(cryptoInfo.symbol || 'UNKNOWN').toUpperCase()}
                             </Typography>
                           </Box>
                         </StyledTableCell>
@@ -314,11 +315,11 @@ const TransactionsPage: React.FC = () => {
                           </Typography>
                         </StyledTableCell>
                         <StyledTableCell>
-                          <Typography variant="body2" sx={{ color: 'common.white' }}>Ft{transaction.unitPrice.toFixed(2)}</Typography>
+                          <Typography variant="body2" sx={{ color: 'common.white' }}>USD{transaction.unitPrice.toFixed(2)}</Typography>
                         </StyledTableCell>
                         <StyledTableCell>
                           <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'common.white' }}>
-                            Ft{transaction.totalPrice.toFixed(2)}
+                            USD{transaction.totalPrice.toFixed(2)}
                           </Typography>
                         </StyledTableCell>
                       </StyledTableRow>

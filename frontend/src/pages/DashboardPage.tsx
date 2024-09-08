@@ -12,6 +12,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Add this line
+import FileUploadIcon from '@mui/icons-material/FileUpload'; // Add this line
 import { amber } from '@mui/material/colors';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
@@ -21,6 +22,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import TopMoversCard from '../components/TopMoversCard';
 import { useAuth } from '../context/useAuth';
+import CSVImportModal from '../components/CSVImportModal';
 
 interface PortfolioItem {
   cryptocurrencyId: string;
@@ -61,6 +63,7 @@ const DashboardPage = () => {
   const { user, logout} = useAuth();
   const [mode, setMode] = useState<PaletteMode>('dark');
   const [selectedTimeFrame, setSelectedTimeFrame] = useState('24h');
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
   const navigate = useNavigate();
   const theme = React.useMemo(() => createTheme({
     palette: {
@@ -76,6 +79,13 @@ const DashboardPage = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleCSVImport = (file : File) => {
+    // Zde implementujte logiku pro zpracování CSV souboru
+    console.log('Importing CSV file:', file.name);
+    // TODO: Přidejte zde logiku pro parsování CSV a aktualizaci portfolia
+    setCsvModalOpen(false);
+  };
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -164,6 +174,9 @@ const DashboardPage = () => {
             <Typography variant="body1" sx={{ mr: 2 }}>
               {user?.username}
             </Typography>
+            <IconButton onClick={() => setCsvModalOpen(true)} color="inherit" sx={{ mr: 2 }}>
+              <FileUploadIcon />
+            </IconButton>
             <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit" sx={{ mr: 2 }}>
               {mode === 'dark' ? '🌞' : '🌙'}
             </IconButton>
@@ -254,7 +267,7 @@ const DashboardPage = () => {
                         </Box>
                       ) : item.cryptocurrencyId}
                     </TableCell>
-                    <TableCell align="right">{item.amount.toFixed(8)}</TableCell>
+                    <TableCell align="right">{item.amount.toFixed(16)}</TableCell>
                     <TableCell align="right">${item.averageBuyPrice.toFixed(2)}</TableCell>
                     <TableCell align="right">${item.coinData?.current_price.toFixed(2) || 'N/A'}</TableCell>
                     <TableCell align="right">
@@ -298,6 +311,11 @@ const DashboardPage = () => {
       </Grid>
     </Container>
         <AddTransactionFab />
+        <CSVImportModal
+          open={csvModalOpen}
+          onClose={() => setCsvModalOpen(false)}
+          onImport={handleCSVImport}
+        />
       </Box>
     </ThemeProvider>
   );

@@ -33,6 +33,19 @@ namespace backend.Services
             return cachedCoins;
         }
 
+        public async Task<Coin> GetCryptoBySymbol(string symbol)
+        {
+            var cachedCoins = await GetList();
+
+            var cachedCoin = cachedCoins.FirstOrDefault(c => c.Symbol.ToLower() == symbol.ToLower());
+            if (cachedCoin != null)
+            {
+                return cachedCoin;
+            }
+
+            return cachedCoin;
+        }
+
         public async Task<List<Coin>> FetchAndCacheCoins(string currency)
         {
             try
