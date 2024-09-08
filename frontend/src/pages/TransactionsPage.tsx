@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   CircularProgress, Avatar, TextField, Select, MenuItem, FormControl, InputLabel, Chip,
-  Button, IconButton, Tooltip, Pagination, Container, Grid, Card, CardContent
+  Button, IconButton, Tooltip, Pagination, Container, Grid, Card, CardContent,
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -13,6 +15,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { fetchCryptoList } from '../utils/api';
 import { debounce } from 'lodash';
+import { Console } from 'console';
 
 interface Transaction {
   id: number;
@@ -95,6 +98,34 @@ const TransactionsPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+
+  const handleDeleteClick = (transaction: Transaction) => {
+    console.log(transaction);
+    setTransactionToDelete(transaction);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (transactionToDelete) {
+      try {
+        console.log(transactionToDelete.id);
+        await axios.delete(`http://localhost:5221/api/Transaction/${transactionToDelete.id}`);
+        setTransactions(transactions.filter(t => t.id !== transactionToDelete.id));
+        setDeleteDialogOpen(false);
+        setTransactionToDelete(null);
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        setError('Failed to delete transaction. Please try again later.');
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setTransactionToDelete(null);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -263,23 +294,24 @@ const TransactionsPage: React.FC = () => {
       </Box>
 
       {Object.entries(groupedTransactions).map(([date, dayTransactions]) => (
-        <StyledCard key={date} sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'text.secondary' }}>{date}</Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <StyledTableCell>Type</StyledTableCell>
-                    <StyledTableCell>Asset</StyledTableCell>
-                    <StyledTableCell>Amount</StyledTableCell>
-                    <StyledTableCell>Unit Price</StyledTableCell>
-                    <StyledTableCell>Total</StyledTableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {dayTransactions.map((transaction) => {
-                    const cryptoInfo = getCryptoInfo(transaction.cryptocurrencyId);
+          <StyledCard key={date} sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'text.secondary' }}>{date}</Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <StyledTableCell>Type</StyledTableCell>
+                      <StyledTableCell>Asset</StyledTableCell>
+                      <StyledTableCell>Amount</StyledTableCell>
+                      <StyledTableCell>Unit Price</StyledTableCell>
+                      <StyledTableCell>Total</StyledTableCell>
+                      <StyledTableCell>Actions</StyledTableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {dayTransactions.map((transaction) => {
+                      const cryptoInfo = getCryptoInfo(transaction.cryptocurrencyId);
                     return (
                       <StyledTableRow key={transaction.id}>
                         <StyledTableCell>
@@ -322,6 +354,17 @@ const TransactionsPage: React.FC = () => {
                             USD{transaction.totalPrice.toFixed(2)}
                           </Typography>
                         </StyledTableCell>
+                        <StyledTableCell>
+                            <Tooltip title="Delete transaction">
+                              <IconButton
+                                onClick={() => handleDeleteClick(transaction)}
+                                size="small"
+                                sx={{ color: 'error.main' }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </StyledTableCell>
                       </StyledTableRow>
                     );
                   })}
@@ -347,6 +390,27 @@ const TransactionsPage: React.FC = () => {
           }}
         />
       </Box>
+      <Dialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"Confirm Transaction Deletion"}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this transaction? This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDeleteCancel} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
     </Container>
     </Box>
   );

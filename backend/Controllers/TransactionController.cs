@@ -97,6 +97,7 @@ namespace backend.Controllers
                 .Where(x => x.UserId == user.Id)
                 .Select(transaction => new
                 {
+                    transaction.Id,
                     transaction.CryptocurrencyId,
                     transaction.Amount,
                     transaction.Date,
@@ -230,22 +231,81 @@ namespace backend.Controllers
             return Ok(transaction);
     }
 
-    [HttpDelete("{id}")]
-    [Authorize]
-    public async Task<IActionResult> DeleteTransaction(int id)
+[HttpDelete("{id}")]
+[Authorize]
+public async Task<IActionResult> DeleteTransaction(int id)
+{
+    var username = User.GetUsername();
+    if (username == null)
     {
-        var transaction = await _context.Transactions.FindAsync(id);
+        return NotFound("User not found.");
+    }
 
-        if (transaction == null)
+    var user = await _userManager.FindByNameAsync(username);
+    if (user == null)
+    {
+        return NotFound("User not found.");
+    }
+
+    var transaction = await _context.Transactions
+        .FirstOrDefaultAsync(t => t.Id == id && t.UserId == user.Id);
+
+    if (transaction == null)
+    {
+        return NotFound("Transaction not found or does not belong to the current user.");
+    }
+
+    // Find the corresponding portfolio item
+    var portfolioItem = await _context.Portfolios
+        .FirstOrDefaultAsync(p => p.UserId == user.Id && p.CryptocurrencyId == transaction.CryptocurrencyId);
+
+    if (portfolioItem != null)
+    {
+        if (transaction.Type == "buy")
         {
-            return NotFound();
+            // Reverse the buy transaction
+            decimal totalValue = portfolioItem.Amount * portfolioItem.AverageBuyPrice;
+            totalValue -= transaction.Amount * transaction.UnitPrice;
+            portfolioItem.Amount -= transaction.Amount;
+
+            if (portfolioItem.Amount > 0)
+            {
+                portfolioItem.AverageBuyPrice = totalValue / portfolioItem.Amount;
+            }
+            else
+            {
+                // If amount becomes 0 or negative, remove the portfolio item
+                _context.Portfolios.Remove(portfolioItem);
+            }
+        }
+        else if (transaction.Type == "sell")
+        {
+            // Reverse the sell transaction
+            decimal totalValue = portfolioItem.Amount * portfolioItem.AverageBuyPrice;
+            totalValue += transaction.Amount * transaction.UnitPrice;
+            portfolioItem.Amount += transaction.Amount;
+
+            // Recalculate average buy price
+            portfolioItem.AverageBuyPrice = totalValue / portfolioItem.Amount;
         }
 
-        _context.Transactions.Remove(transaction);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        portfolioItem.UpdatedAt = DateTime.UtcNow;
     }
+
+    _context.Transactions.Remove(transaction);
+
+    try
+    {
+        await _context.SaveChangesAsync();
+    }
+    catch (DbUpdateException ex)
+    {
+        // Log the exception
+        return StatusCode(500, "An error occurred while deleting the transaction. Please try again.");
+    }
+
+    return NoContent();
+}
 
 [HttpPost("import-csv")]
 public async Task<IActionResult> ImportCsv(IFormFile file)
