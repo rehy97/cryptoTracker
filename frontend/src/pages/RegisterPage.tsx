@@ -9,6 +9,10 @@ import useValidations from '../hooks/useValidations';
 import { Visibility, VisibilityOff, Google, Apple } from '@mui/icons-material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useAuth } from '../context/useAuth';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
 
 const RegisterPage: React.FC = () => {
   const theme = useTheme();
@@ -20,7 +24,7 @@ const RegisterPage: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    dateOfBirth: '',
+    dateOfBirth: null as Dayjs | null,
   });
 
   const [error, setError] = useState('');
@@ -32,6 +36,13 @@ const RegisterPage: React.FC = () => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleDateChange = (date: Dayjs | null) => {
+    setFormData({
+      ...formData,
+      dateOfBirth: date,
     });
   };
 
@@ -56,7 +67,7 @@ const RegisterPage: React.FC = () => {
         formData.lastName,
         formData.email,
         formData.password,
-        formData.dateOfBirth
+        formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : ''
       );
       setSuccess('User registered successfully');
     } catch (error: any) {
@@ -65,187 +76,187 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        pt: 8,
-        pb: 6,
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-      }}
-    >
-      <Container maxWidth="sm">
-        <Box
-          sx={{
-            p: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            borderRadius: '16px',
-            border: `1px solid ${theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)'}`,
-          }}
-        >
-          <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
-            Register
-          </Typography>
-          <Typography variant="h6" align="center" color="textSecondary" paragraph>
-            Create your account to get started
-          </Typography>
-          {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>{success}</Alert>}
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box
+        sx={{
+          pt: 8,
+          pb: 6,
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
+        }}
+      >
+        <Container maxWidth="sm">
           <Box
-            component="form"
             sx={{
-              width: '100%',
-              mt: 1,
+              p: 4,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 2,
+              borderRadius: '16px',
+              border: `1px solid ${theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)'}`,
             }}
-            onSubmit={handleSubmit}
           >
-            <FormInput
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              validation={validations.username}
-            />
-            <FormInput
-              label="First Name"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              validation={validations.firstName}
-            />
-            <FormInput
-              label="Last Name"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              validation={validations.lastName}
-            />
-            <FormInput
-              label="Email Address"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              validation={validations.email}
-            />
-            <PasswordField
-              label="Password"
-              name="password"
-              value={formData.password}
-              showPassword={showPassword}
-              onChange={handleChange}
-              onClickShowPassword={handleClickShowPassword}
-              validations={{
-                length: validations.passwordLength,
-                uppercase: validations.passwordUppercase,
-                number: validations.passwordNumber,
-              }}
-            />
-            <ValidationMessages 
-              validations={{
-                length: validations.passwordLength,
-                uppercase: validations.passwordUppercase,
-                number: validations.passwordNumber,
-              }} 
-            />
-            <TextField
-              variant="outlined"
-              fullWidth
-              label="Confirm Password"
-              name="confirmPassword"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              InputProps={{
-                endAdornment: (
-                  <>
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={handleClickShowPassword}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                    {validations.passwordMatch && (
-                      <InputAdornment position="end">
-                        <CheckCircleOutlineIcon color="success" />
-                      </InputAdornment>
-                    )}
-                  </>
-                ),
-              }}
-            />
-            <FormInput
-              label="Date of Birth"
-              name="dateOfBirth"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={formData.dateOfBirth}
-              onChange={handleChange}
-            />
-            <Typography variant="caption" color={validations.ageValid ? 'success.main' : 'error.main'}>
-              {validations.ageValid ? '✓' : '✕'} You must be at least 18 years old
-            </Typography>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={
-                !validations.username ||
-                !validations.firstName ||
-                !validations.lastName ||
-                !validations.email ||
-                !validations.passwordLength ||
-                !validations.passwordUppercase ||
-                !validations.passwordNumber ||
-                !validations.passwordMatch ||
-                !validations.ageValid
-              }
-            >
+            <Typography component="h1" variant="h4" align="center" color="textPrimary" gutterBottom>
               Register
-            </Button>
-            
-            <Divider sx={{ width: '100%', my: 2 }}>or</Divider>
-            
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Google />}
-              sx={{ mb: 1, color: 'text.primary', borderColor: 'divider' }}
-            >
-              Continue with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Apple />}
-              sx={{ mb: 2, color: 'text.primary', borderColor: 'divider' }}
-            >
-              Continue with Apple
-            </Button>
-            
-            <Typography variant="body2" color="textSecondary" align="center">
-              Already have an account?{' '}
-              <Link to="/login" style={{ color: theme.palette.primary.main }}>
-                Login
-              </Link>
             </Typography>
+            <Typography variant="h6" align="center" color="textSecondary" paragraph>
+              Create your account to get started
+            </Typography>
+            {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>{success}</Alert>}
+            <Box
+              component="form"
+              sx={{
+                width: '100%',
+                mt: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+              }}
+              onSubmit={handleSubmit}
+            >
+              <FormInput
+                label="Username"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                validation={validations.username}
+              />
+              <FormInput
+                label="First Name"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                validation={validations.firstName}
+              />
+              <FormInput
+                label="Last Name"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                validation={validations.lastName}
+              />
+              <FormInput
+                label="Email Address"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                validation={validations.email}
+              />
+              <PasswordField
+                label="Password"
+                name="password"
+                value={formData.password}
+                showPassword={showPassword}
+                onChange={handleChange}
+                onClickShowPassword={handleClickShowPassword}
+                validations={{
+                  length: validations.passwordLength,
+                  uppercase: validations.passwordUppercase,
+                  number: validations.passwordNumber,
+                }}
+              />
+              <ValidationMessages 
+                validations={{
+                  length: validations.passwordLength,
+                  uppercase: validations.passwordUppercase,
+                  number: validations.passwordNumber,
+                }} 
+              />
+              <TextField
+                variant="outlined"
+                fullWidth
+                label="Confirm Password"
+                name="confirmPassword"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                InputProps={{
+                  endAdornment: (
+                    <>
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleClickShowPassword}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                      {validations.passwordMatch && (
+                        <InputAdornment position="end">
+                          <CheckCircleOutlineIcon color="success" />
+                        </InputAdornment>
+                      )}
+                    </>
+                  ),
+                }}
+              />
+              <DatePicker
+                label="Date of Birth"
+                value={formData.dateOfBirth}
+                onChange={handleDateChange}
+                sx={{ width: "100%" }}
+              />
+              <Typography variant="caption" color={validations.ageValid ? 'success.main' : 'error.main'}>
+                {validations.ageValid ? '✓' : '✕'} You must be at least 18 years old
+              </Typography>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={
+                  !validations.username ||
+                  !validations.firstName ||
+                  !validations.lastName ||
+                  !validations.email ||
+                  !validations.passwordLength ||
+                  !validations.passwordUppercase ||
+                  !validations.passwordNumber ||
+                  !validations.passwordMatch ||
+                  !validations.ageValid
+                }
+              >
+                Register
+              </Button>
+              
+              <Divider sx={{ width: '100%', my: 2 }}>or</Divider>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Google />}
+                sx={{ mb: 1, color: 'text.primary', borderColor: 'divider' }}
+              >
+                Continue with Google
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Apple />}
+                sx={{ mb: 2, color: 'text.primary', borderColor: 'divider' }}
+              >
+                Continue with Apple
+              </Button>
+              
+              <Typography variant="body2" color="textSecondary" align="center">
+                Already have an account?{' '}
+                <Link to="/login" style={{ color: theme.palette.primary.main }}>
+                  Login
+                </Link>
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-      </Container>
-    </Box>
+        </Container>
+      </Box>
+    </LocalizationProvider>
   );
 };
 
