@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -15,7 +16,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { fetchCryptoList } from '../utils/api';
 import { debounce } from 'lodash';
-import { Console } from 'console';
+import { useNavigate } from 'react-router-dom';
 
 interface Transaction {
   id: number;
@@ -89,6 +90,7 @@ const DarkSelect = styled(Select)(({ theme }) => ({
 
 const TransactionsPage: React.FC = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +107,10 @@ const TransactionsPage: React.FC = () => {
     console.log(transaction);
     setTransactionToDelete(transaction);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    navigate('/edit-transaction', { state: { transaction, cryptocurrencies } });
   };
 
   const handleDeleteConfirm = async () => {
@@ -355,6 +361,11 @@ const TransactionsPage: React.FC = () => {
                           </Typography>
                         </StyledTableCell>
                         <StyledTableCell>
+                            <Tooltip title="Edit transaction">
+                              <IconButton onClick={() => handleEditTransaction(transaction)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Delete transaction">
                               <IconButton
                                 onClick={() => handleDeleteClick(transaction)}

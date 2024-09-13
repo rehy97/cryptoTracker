@@ -191,45 +191,116 @@ namespace backend.Controllers
             return Ok(transaction);
         }
 
-        [HttpPut("{id}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateTransaction(int id, [FromBody] NewTransactionDto transactionDto)
-        {
-
-            var transaction = await _context.Transactions.FindAsync(id);
-
-            if (transaction == null)
-            {
-                return NotFound();
-            }
-
-            if (transactionDto.Amount <= 0)
-            {
-                return BadRequest("Amount must be greater than 0.");
-            }
-
-            if (transactionDto.UnitPrice <= 0)
-            {
-                return BadRequest("Unit price must be greater than 0.");
-            }
-
-            if (!IsTypeAllowed(transactionDto.Type))
-            {
-                return BadRequest("Invalid transaction type.");
-            }
-
-            transaction.CryptocurrencyId = transactionDto.CryptocurrencyId;
-            transaction.Date = transactionDto.Date;
-            transaction.UpdatedAt = DateTime.UtcNow;
-            transaction.Type = transactionDto.Type;
-            transaction.Amount = transactionDto.Amount;
-            transaction.UnitPrice = transactionDto.UnitPrice;
-            transaction.TotalPrice = transactionDto.Amount * transactionDto.UnitPrice;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(transaction);
+[HttpPut("{id}")]
+[Authorize]
+public async Task<IActionResult> UpdateTransaction(int id, [FromBody] NewTransactionDto transactionDto)
+{
+    var username = User.GetUsername();
+    if (username == null)
+    {
+        return NotFound("User not found.");
     }
+    var user = await _userManager.FindByNameAsync(username);
+    if (user == null)
+    {
+        return NotFound("User not found.");
+    }
+
+    using var dbTransaction = await _context.Database.BeginTransactionAsync();
+    try
+    {
+        var transaction = await _context.Transactions.FindAsync(id);
+        if (transaction == null)
+        {
+            return NotFound("Transaction not found.");
+        }
+
+        if (transaction.UserId != user.Id)
+        {
+            return Forbid("You don't have permission to edit this transaction.");
+        }
+
+        if (transactionDto.Amount <= 0)
+        {
+            return BadRequest("Amount must be greater than 0.");
+        }
+        if (transactionDto.UnitPrice <= 0)
+        {
+            return BadRequest("Unit price must be greater than 0.");
+        }
+        if (!IsTypeAllowed(transactionDto.Type))
+        {
+            return BadRequest("Invalid transaction type.");
+        }
+
+        // Revert the effect of the old transaction on the portfolio
+        var portfolioItem = await _context.Portfolios
+            .FirstOrDefaultAsync(p => p.UserId == user.Id && p.CryptocurrencyId == transaction.CryptocurrencyId);
+        
+        if (portfolioItem == null)
+        {
+            return BadRequest("Portfolio item not found for this cryptocurrency.");
+        }
+
+        if (transaction.Type == "buy")
+        {
+            portfolioItem.Amount -= transaction.Amount;
+            if (portfolioItem.Amount < 0)
+            {
+                return BadRequest("Reverting this transaction would result in negative portfolio amount.");
+            }
+            if (portfolioItem.Amount > 0)
+            {
+                decimal totalCost = (portfolioItem.Amount * portfolioItem.AverageBuyPrice) - (transaction.Amount * transaction.UnitPrice);
+                portfolioItem.AverageBuyPrice = totalCost / portfolioItem.Amount;
+            }
+            else
+            {
+                portfolioItem.AverageBuyPrice = 0;
+            }
+        }
+        else if (transaction.Type == "sell")
+        {
+            portfolioItem.Amount += transaction.Amount;
+        }
+
+        // Apply the new transaction
+        if (transactionDto.Type == "buy")
+        {
+            decimal totalCost = portfolioItem.Amount * portfolioItem.AverageBuyPrice + transactionDto.Amount * transactionDto.UnitPrice;
+            portfolioItem.Amount += transactionDto.Amount;
+            portfolioItem.AverageBuyPrice = totalCost / portfolioItem.Amount;
+        }
+        else if (transactionDto.Type == "sell")
+        {
+            if (portfolioItem.Amount < transactionDto.Amount)
+            {
+                return BadRequest("Insufficient cryptocurrency amount for selling.");
+            }
+            portfolioItem.Amount -= transactionDto.Amount;
+        }
+
+        // Update the transaction
+        transaction.CryptocurrencyId = transactionDto.CryptocurrencyId;
+        transaction.Date = transactionDto.Date.ToUniversalTime();
+        transaction.UpdatedAt = DateTime.UtcNow;
+        transaction.Type = transactionDto.Type;
+        transaction.Amount = transactionDto.Amount;
+        transaction.UnitPrice = transactionDto.UnitPrice;
+        transaction.TotalPrice = transactionDto.Amount * transactionDto.UnitPrice;
+
+        // Save changes
+        await _context.SaveChangesAsync();
+        await dbTransaction.CommitAsync();
+
+        return Ok(new { Transaction = transaction, Portfolio = portfolioItem });
+    }
+    catch (Exception ex)
+    {
+        await dbTransaction.RollbackAsync();
+        return BadRequest($"Error updating transaction: {ex.Message}");
+    }
+}
 
 [HttpDelete("{id}")]
 [Authorize]

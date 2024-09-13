@@ -14,13 +14,14 @@ import { UserProvider } from "./context/useAuth";
 import TransactionsPage from "./pages/TransactionsPage";
 import CreateTransactionPage from "./pages/CreateTransactionPage";
 import IntegrationPage from "./pages/IntegrationPage";
+import EditTransactionPage from "./pages/EditTransactionPage";
 
 const App = () => {
   const { theme } = useThemeContext();
   const location = useLocation();
   
   // Upravená podmínka pro zobrazení Navbar
-  const showNavbar = !["/dashboard", "/transactions", "/create", "/register", "/login"].includes(location.pathname);
+  const showNavbar = !["/dashboard", "/transactions", "/create-transaction", "/register", "/login", "/edit-transaction"].includes(location.pathname);
 
   return (
     <ThemeProvider theme={theme}>
@@ -35,7 +36,8 @@ const App = () => {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/integration" element={<IntegrationPage />} />
-          <Route path="/create" element={<CreateTransactionPage type={null} cryptocurrencyId={null} />} />
+          <Route path="/create-transaction" element={<CreateTransactionPage type={null} cryptocurrencyId={null} />} />
+          <Route path="/edit-transaction" element={<EditTransactionPage/>} />
         </Routes>
         <ToastContainer
           theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}

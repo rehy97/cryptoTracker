@@ -99,7 +99,11 @@ options.TokenValidationParameters = new TokenValidationParameters
         System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SigningKey"])
     )
 };
-});
+}).AddGoogle(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    });
 
 builder.Services.AddScoped<TokenService>();
 

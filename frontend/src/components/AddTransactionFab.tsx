@@ -7,7 +7,7 @@ const AddTransactionFab: React.FC = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate('/create'); // Přesměruje na stránku pro přidání transakce
+    navigate('/create-transaction'); // Přesměruje na stránku pro přidání transakce
   };
 
   return (
