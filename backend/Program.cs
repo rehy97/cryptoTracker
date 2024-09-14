@@ -65,6 +65,7 @@ builder.Services.AddSwaggerGen(option =>
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<CoinRefreshService>();
 builder.Services.AddSingleton<CoinService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -79,7 +80,8 @@ builder.Services.AddIdentity<User, IdentityRole>(options => {
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
 })
-.AddEntityFrameworkStores<AppDbContext>();
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme = 
@@ -102,8 +104,12 @@ options.TokenValidationParameters = new TokenValidationParameters
 });
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddHttpClient<ReCaptchaService>();
+builder.Services.AddScoped<ReCaptchaService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<RateLimitingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

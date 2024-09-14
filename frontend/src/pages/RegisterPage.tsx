@@ -13,6 +13,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
+import ReCAPTCHA from "react-google-recaptcha";
 
 const RegisterPage: React.FC = () => {
   const theme = useTheme();
@@ -25,6 +26,7 @@ const RegisterPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     dateOfBirth: null as Dayjs | null,
+    captchaToken: '',
   });
 
   const [error, setError] = useState('');
@@ -50,13 +52,22 @@ const RegisterPage: React.FC = () => {
     setShowPassword(!showPassword);
   };
 
+  const handleCaptchaChange = (token: string | null) => {
+    setFormData({
+      ...formData,
+      captchaToken: token || '',
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if(!validations.username || !validations.firstName || !validations.lastName || !validations.email || !validations.passwordMatch || !validations.ageValid) {
-      setError('Please fill in all fields correctly.');
+    if(!validations.username || !validations.firstName || !validations.lastName || 
+       !validations.email || !validations.passwordMatch || !validations.ageValid || 
+       !validations.captchaValid) {
+      setError('Please fill in all fields correctly and complete the CAPTCHA.');
       return;
     }
 
@@ -67,14 +78,14 @@ const RegisterPage: React.FC = () => {
         formData.lastName,
         formData.email,
         formData.password,
-        formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : ''
+        formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : '',
+        formData.captchaToken
       );
-      setSuccess('User registered successfully');
+      setSuccess('User registered successfully. Please check your email for confirmation.');
     } catch (error: any) {
       setError(error.message);
     }
   };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box
@@ -105,8 +116,25 @@ const RegisterPage: React.FC = () => {
             <Typography variant="h6" align="center" color="textSecondary" paragraph>
               Create your account to get started
             </Typography>
-            {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>{success}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+              {error}
+              {error.includes("email sending limit") && (
+                <Typography variant="body2">
+                  We're experiencing high traffic. Please try again later.
+                </Typography>
+              )}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" sx={{ width: '100%', mb: 2 }}>
+              {success}
+              <Typography variant="body2">
+                Please check your email for a confirmation link.
+              </Typography>
+            </Alert>
+          )}
             <Box
               component="form"
               sx={{
@@ -206,6 +234,12 @@ const RegisterPage: React.FC = () => {
               <Typography variant="caption" color={validations.ageValid ? 'success.main' : 'error.main'}>
                 {validations.ageValid ? '✓' : '✕'} You must be at least 18 years old
               </Typography>
+
+              <ReCAPTCHA
+              sitekey="6LfqPEMqAAAAAM3qEwOEFB11nCyth0r4bDFbOmIG"
+              onChange={handleCaptchaChange}
+              />
+
               <Button
                 type="submit"
                 fullWidth
@@ -221,7 +255,8 @@ const RegisterPage: React.FC = () => {
                   !validations.passwordUppercase ||
                   !validations.passwordNumber ||
                   !validations.passwordMatch ||
-                  !validations.ageValid
+                  !validations.ageValid ||
+                  !validations.captchaValid
                 }
               >
                 Register

@@ -14,7 +14,8 @@ type UserContextType = {
         lastName: string,
         email: string,
         password: string,
-        dateOfBirth: string
+        dateOfBirth: string,
+        captchaToken: string // Add captchaToken parameter
     ) => Promise<void>;
     loginUser: (username: string, password: string) => Promise<void>;
     logout: () => void;
@@ -50,11 +51,13 @@ export const UserProvider = ({ children }: Props) => {
         lastName: string,
         email: string,
         password: string,
-        dateOfBirth: string
+        dateOfBirth: string,
+        captchaToken: string
     ) => {
         try {
-            const response = await registerAPI(username, firstName, lastName, email, password, dateOfBirth);
+            const response = await registerAPI(username, firstName, lastName, email, password, dateOfBirth, captchaToken);
             if (response && response.data) {
+                console.log(response.data);
                 const userObj = {
                     username: response.data.username,
                     firstName: response.data.firstName,

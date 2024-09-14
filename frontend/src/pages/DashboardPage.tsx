@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress, Menu } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -74,6 +74,7 @@ const DashboardPage = () => {
   }), [mode]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
   const [portfolio, setPortfolio] = useState<PortfolioItemWithCoinData[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -141,6 +142,22 @@ const DashboardPage = () => {
     navigate(`/create`, { state: { cryptocurrencyId, type } });
   };
 
+  const getUserInitials = (username : string) => {
+    return username
+      .split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const handleClick = (event : any) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
   const drawerContent = (
     <Box sx={{ width: 250 }} role="presentation">
       <List>
@@ -166,31 +183,41 @@ const DashboardPage = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Box component="header" sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
-          <IconButton onClick={toggleDrawer(true)} edge="start" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body1" sx={{ mr: 2 }}>
-              {user?.username}
-            </Typography>
-            <IconButton onClick={() => setCsvModalOpen(true)} color="inherit" sx={{ mr: 2 }}>
-              <FileUploadIcon />
-            </IconButton>
-            <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit" sx={{ mr: 2 }}>
-              {mode === 'dark' ? '🌞' : '🌙'}
-            </IconButton>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<LogoutIcon />}
-              onClick={logout}
-              size='small'
-            >
-              Logout
-            </Button>
-          </Box>
-        </Box>
+      <Box component="header" sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
+      <IconButton onClick={toggleDrawer(true)} edge="start" color="inherit" aria-label="menu">
+        <MenuIcon />
+      </IconButton>
+      <Avatar 
+        onClick={handleClick}
+        sx={{ bgcolor: 'primary.main', cursor: 'pointer' }}
+      >
+        {user?.username ? getUserInitials(user.username) : ''}
+      </Avatar>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+      >
+        <MenuItem onClick={() => { setMode(mode === 'dark' ? 'light' : 'dark'); handleClose(); }}>
+          <ListItemIcon>
+            {mode === 'dark' ? '🌞' : '🌙'}
+          </ListItemIcon>
+          <ListItemText primary={mode === 'dark' ? "Light Mode" : "Dark Mode"} />
+        </MenuItem>
+        <MenuItem onClick={() => { setCsvModalOpen(true); handleClose(); }}>
+          <ListItemIcon>
+            <FileUploadIcon />
+          </ListItemIcon>
+          <ListItemText primary="Import CSV" />
+        </MenuItem>
+        <MenuItem onClick={() => { logout(); handleClose(); }}>
+          <ListItemIcon>
+            <LogoutIcon />
+          </ListItemIcon>
+          <ListItemText primary="Logout" />
+        </MenuItem>
+      </Menu>
+    </Box>
 
         <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
           {drawerContent}
@@ -284,15 +311,16 @@ const DashboardPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="right">
-                      {item.coinData && (
-                        <Chip
-                          icon={item.coinData.current_price > item.averageBuyPrice ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                          label={`${((item.coinData.current_price - item.averageBuyPrice) / item.averageBuyPrice * 100).toFixed(2)}%`}
-                          color={item.coinData.current_price > item.averageBuyPrice ? 'success' : 'error'}
-                          variant="outlined"
-                        />
-                      )}
-                    </TableCell>
+                            {item.coinData && (
+                              <Chip
+                                icon={item.coinData.current_price > item.averageBuyPrice ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                                label={`${((item.coinData.current_price - item.averageBuyPrice) / item.averageBuyPrice * 100).toFixed(2)}%`}
+                                color={item.coinData.current_price > item.averageBuyPrice ? 'success' : 'error'}
+                                variant="outlined"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                          </TableCell>
                     <TableCell align="right">
                       <Button onClick={() => handleTransactionClick(item.cryptocurrencyId, 'buy')} startIcon={<AddIcon />} variant="contained" size="small" sx={{ mr: 1 }}>
                         Buy

@@ -19,4 +19,6 @@ public class RegisterDto
 
     [Required]
     public DateTime DateOfBirth { get; set; }
+
+    public string CaptchaToken { get; set; }
 }

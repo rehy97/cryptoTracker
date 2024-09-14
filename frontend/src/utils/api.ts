@@ -29,7 +29,7 @@ export const loginAPI = async (username: string, password: string) => {
     }
 }
 
-export const registerAPI = async (username: string, firstName: string, lastName: string, email: string, password: string, dateOfBirth: string) => {
+export const registerAPI = async (username: string, firstName: string, lastName: string, email: string, password: string, dateOfBirth: string, captchaToken: string) => {
     try {
         const data = await axios.post<UserProfileToken>(`${api}/User/register`, {
             username,
@@ -38,6 +38,7 @@ export const registerAPI = async (username: string, firstName: string, lastName:
             email,
             password,
             dateOfBirth,
+            captchaToken,
         });
         return data;
     } catch (error : any) {

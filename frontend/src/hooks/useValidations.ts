@@ -11,10 +11,11 @@ const useValidations = (formData: any) => {
     passwordNumber: false,
     passwordMatch: false,
     ageValid: false,
+    captchaValid: false,
   });
 
   useEffect(() => {
-    const { username, firstName, lastName, email, password, confirmPassword, dateOfBirth } = formData;
+    const { username, firstName, lastName, email, password, confirmPassword, dateOfBirth, captchaToken } = formData;
     const calculateAge = (dob: string) => {
       const birthDate = new Date(dob);
       const today = new Date();
@@ -36,6 +37,7 @@ const useValidations = (formData: any) => {
       passwordNumber: /\d/.test(password),
       passwordMatch: password === confirmPassword,
       ageValid: dateOfBirth ? calculateAge(dateOfBirth) >= 18 : false,
+      captchaValid: !!captchaToken,
     });
   }, [formData]);
 

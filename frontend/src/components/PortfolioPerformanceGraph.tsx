@@ -140,13 +140,36 @@ const PortfolioPerformanceChart: React.FC<PortfolioPerformanceChartProps> = ({ p
   const changeValue = endValue - startValue;
   const changePercentage = startValue !== 0 ? ((endValue - startValue) / startValue) * 100 : 0;
 
+
   const chartOptions: ApexOptions = {
     colors: [theme.palette.primary.main],
     chart: {
       type: 'area',
       height: 350,
       toolbar: {
-        show: false,
+        show: true,
+        tools: {
+          download: true,
+          selection: true,
+          zoom: false,
+          zoomin: true,
+          reset: true,
+        },
+        autoSelected: 'zoom',
+        export: {
+          svg: {
+            filename: 'portfolio-performance-chart-svg',
+          },
+          png: {
+            filename: 'portfolio-performance-chart-png',
+          },
+          csv: {
+            filename: 'portfolio-performance-data-csv',
+            columnDelimiter: ',',
+            headerCategory: 'Date',
+            headerValue: 'Value',
+          }
+        },
       },
       animations: {
         enabled: true,
