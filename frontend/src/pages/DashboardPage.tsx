@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, Grid, Card, CardContent, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, useTheme, ThemeProvider, createTheme, CssBaseline, Button, Chip, Avatar, LinearProgress, Select, MenuItem, FormControl, InputLabel, TextField, Tab, Tabs, PaletteMode, ToggleButton, ToggleButtonGroup, CircularProgress, Menu, Tooltip } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -11,24 +11,49 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; // Add this line
-import FileUploadIcon from '@mui/icons-material/FileUpload'; // Add this line
-import { amber } from '@mui/material/colors';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';import FileUploadIcon from '@mui/icons-material/FileUpload';import { amber } from '@mui/material/colors';
 import PortfolioCard from '../components/PortfolioCard';
 import PortfolioPerformanceChart from '../components/PortfolioPerformanceGraph';
 import CryptoDistributionChart from '../components/CryptoDistributionChart';
 import AddTransactionFab from '../components/AddTransactionFab';
 import axios from 'axios';
+import Header from '../components/Header';
+import AppDrawer from '../components/AppDrawer';
 import { useNavigate } from 'react-router-dom';
 import TopMoversCard from '../components/TopMoversCard';
 import { useAuth } from '../context/useAuth';
 import CSVImportModal from '../components/CSVImportModal';
-
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 interface PortfolioItem {
   cryptocurrencyId: string;
   amount: number;
   averageBuyPrice: number;
   currentPrice: number;
+}
+interface DashboardComponent {
+  id: string;
+  name: string;
+  enabled: boolean;
 }
 
 interface CoinData {
@@ -59,11 +84,21 @@ interface Transaction {
   totalPrice: number;
 }
 
+const defaultComponents: DashboardComponent[] = [
+  { id: 'portfolio-card', name: 'Portfolio Overview', enabled: true },
+  { id: 'portfolio-performance', name: 'Portfolio Performance', enabled: true },
+  { id: 'crypto-distribution', name: 'Crypto Distribution', enabled: true },
+  { id: 'top-gainers', name: 'Top Gainers', enabled: true },
+  { id: 'top-losers', name: 'Top Losers', enabled: true },
+  { id: 'holdings-table', name: 'Holdings Table', enabled: true },
+];
+
 const DashboardPage = () => {
-  const { user, logout} = useAuth();
+  const { user, logout } = useAuth();
+  const [dashboardSettings, setDashboardSettings] = useState<DashboardComponent[]>([]);
   const [mode, setMode] = useState<PaletteMode>('dark');
-  const [selectedTimeFrame, setSelectedTimeFrame] = useState('24h');
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const theme = React.useMemo(() => createTheme({
     palette: {
@@ -73,18 +108,40 @@ const DashboardPage = () => {
     },
   }), [mode]);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioItemWithCoinData[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCSVImport = (file : File) => {
-    // Zde implementujte logiku pro zpracování CSV souboru
-    console.log('Importing CSV file:', file.name);
-    // TODO: Přidejte zde logiku pro parsování CSV a aktualizaci portfolia
-    setCsvModalOpen(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setDashboardSettings((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        localStorage.setItem('dashboardSettings', JSON.stringify(newOrder));
+        return newOrder;
+      });
+    }
+
+    setActiveId(null);
   };
 
   const fetchPortfolioData = useCallback(async () => {
@@ -110,11 +167,6 @@ const DashboardPage = () => {
     }
   }, []);
 
-  const handleNavigation = (path : string) => {
-    navigate(path);
-    setDrawerOpen(false);
-  };
-
   const fetchTransactions = useCallback(async () => {
     try {
       const response = await axios.get<Transaction[]>('http://localhost:5221/api/Transaction');
@@ -126,115 +178,114 @@ const DashboardPage = () => {
   }, []);
 
   useEffect(() => {
+    const savedSettings = localStorage.getItem('dashboardSettings');
+    if (savedSettings) {
+      setDashboardSettings(JSON.parse(savedSettings));
+    } else {
+      setDashboardSettings(defaultComponents);
+    }
     fetchPortfolioData();
     fetchTransactions();
   }, [fetchPortfolioData, fetchTransactions]);
 
-  const toggleDrawer = (open : any) => (event : any) => {
-    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
-      return;
+  const getGridSize = (componentId: string): { xs: number, md: number } => {
+    switch (componentId) {
+      case 'portfolio-card':
+        return { xs: 12, md: 4 };
+      case 'portfolio-performance':
+        return { xs: 12, md: 8 };
+      case 'crypto-distribution':
+      case 'top-gainers':
+      case 'top-losers':
+        return { xs: 12, md: 4 };
+      case 'holdings-table':
+        return { xs: 12, md: 12 };
+      default:
+        return { xs: 12, md: 4 };
     }
-    setDrawerOpen(open);
   };
 
-  const handleTransactionClick = (cryptocurrencyId : string, type : string) => {
-    navigate(`/create`, { state: { cryptocurrencyId, type } });
-  };
+  const SortableItem = ({ component, children }: { component: DashboardComponent; children: React.ReactNode }) => {
+    const { xs, md } = getGridSize(component.id);
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: component.id });
 
-  const drawerContent = (
-    <Box sx={{ width: 250 }} role="presentation">
-      <List>
-        {[
-          { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-          { text: 'Portfolio', icon: <AccountBalanceWalletIcon />, path: '/portfolio' },
-          { text: 'Market', icon: <ShowChartIcon />, path: '/integration' },
-          { text: 'Transactions', icon: <SwapHorizIcon />, path: '/transactions' },
-          { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-        ].map((item) => (
-          <ListItem button key={item.text} onClick={() => handleNavigation(item.path)}>
-            <ListItemIcon>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
 
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Box component="header" sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
-          <IconButton onClick={toggleDrawer(true)} edge="start" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body1" sx={{ mr: 2 }}>
-              {user?.username}
-            </Typography>
-            <IconButton onClick={() => setCsvModalOpen(true)} color="inherit" sx={{ mr: 2 }}>
-              <FileUploadIcon />
-            </IconButton>
-            <IconButton onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')} color="inherit" sx={{ mr: 2 }}>
-              {mode === 'dark' ? '🌞' : '🌙'}
-            </IconButton>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<LogoutIcon />}
-              onClick={logout}
-              size='small'
-            >
-              Logout
-            </Button>
+    return (
+      <Grid item xs={xs} md={md} ref={setNodeRef} style={style} {...attributes}>
+        <Paper sx={{ 
+          width: '100%', 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          position: 'relative',
+          visibility: isDragging ? 'hidden' : 'visible',
+        }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 5,
+              right: 5,
+              zIndex: 1,
+              cursor: 'move',
+            }}
+            {...listeners}
+          >
+            <Tooltip title="Drag to reorder">
+              <IconButton size="small">
+                <DragIndicatorIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
-        </Box>
+          {children}
+        </Paper>
+      </Grid>
+    );
+  };
 
-        <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-          {drawerContent}
-        </Drawer>
-
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-      <Grid container spacing={3} sx={{ height: '100%' }}>
-        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <Paper sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-            <PortfolioCard portfolio={portfolio} transactions={transactions} />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={8} sx={{ display: 'flex' }}>
-          <Paper sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+  const renderDashboardComponent = (component: DashboardComponent) => {
+    const content = (() => {
+      switch (component.id) {
+        case 'portfolio-card':
+          return <PortfolioCard portfolio={portfolio} transactions={transactions} />;
+        case 'portfolio-performance':
+          return (
             <PortfolioPerformanceChart 
               portfolio={portfolio}
               transactions={transactions}
               theme={theme}
               mode={mode}
             />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <Paper sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CryptoDistributionChart portfolio={portfolio} />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <Paper sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+          );
+        case 'crypto-distribution':
+          return <CryptoDistributionChart portfolio={portfolio} />;
+        case 'top-gainers':
+          return (
             <TopMoversCard 
               title="Top Gainers"
               type="gainers"
             />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-          <Paper sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+          );
+        case 'top-losers':
+          return (
             <TopMoversCard 
               title="Top Losers"
               type="losers"
             />
-          </Paper>
-        </Grid>
-        <Grid item xs={12}>
+          );
+      case 'holdings-table':
+        return (
           <Paper sx={{ width: '100%', overflow: 'hidden' }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
@@ -284,15 +335,16 @@ const DashboardPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="right">
-                      {item.coinData && (
-                        <Chip
-                          icon={item.coinData.current_price > item.averageBuyPrice ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                          label={`${((item.coinData.current_price - item.averageBuyPrice) / item.averageBuyPrice * 100).toFixed(2)}%`}
-                          color={item.coinData.current_price > item.averageBuyPrice ? 'success' : 'error'}
-                          variant="outlined"
-                        />
-                      )}
-                    </TableCell>
+                            {item.coinData && (
+                              <Chip
+                                icon={item.coinData.current_price > item.averageBuyPrice ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                                label={`${((item.coinData.current_price - item.averageBuyPrice) / item.averageBuyPrice * 100).toFixed(2)}%`}
+                                color={item.coinData.current_price > item.averageBuyPrice ? 'success' : 'error'}
+                                variant="outlined"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                          </TableCell>
                     <TableCell align="right">
                       <Button onClick={() => handleTransactionClick(item.cryptocurrencyId, 'buy')} startIcon={<AddIcon />} variant="contained" size="small" sx={{ mr: 1 }}>
                         Buy
@@ -307,9 +359,122 @@ const DashboardPage = () => {
             </Table>
             )}
           </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+        );
+      default:
+        return null;
+      }
+    })();
+
+    return (
+      <SortableItem key={component.id} component={component}>
+        {content}
+      </SortableItem>
+    );
+  };
+
+  const toggleDrawer = (open : any) => (event : any) => {
+    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return;
+    }
+    setDrawerOpen(open);
+  };
+
+  const handleTransactionClick = (cryptocurrencyId : string, type : string) => {
+    navigate(`/create`, { state: { cryptocurrencyId, type } });
+  };
+
+  const getUserInitials = (username : string) => {
+    return username
+      .split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const handleClick = (event : any) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleModeChange = (newMode: PaletteMode) => {
+    setMode(newMode);
+  };
+
+  const handleCSVImport = () => {
+    setCsvModalOpen(true);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
+  const drawerContent = (
+    <Box sx={{ width: 250 }} role="presentation">
+      <List>
+        {[
+          { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+          { text: 'Portfolio', icon: <AccountBalanceWalletIcon />, path: '/portfolio' },
+          { text: 'Market', icon: <ShowChartIcon />, path: '/integration' },
+          { text: 'Transactions', icon: <SwapHorizIcon />, path: '/transactions' },
+          { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+        ].map((item) => (
+          <ListItem button key={item.text} onClick={() => handleNavigation(item.path)}>
+            <ListItemIcon>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+        <Header 
+          onDrawerToggle={handleDrawerToggle}
+          onModeChange={handleModeChange}
+          onCSVImport={handleCSVImport}
+          onLogout={logout}
+          username={user?.username || ''}
+          mode={mode}
+        />
+        <AppDrawer 
+          open={drawerOpen}
+          onClose={handleDrawerToggle}
+          onNavigate={handleNavigation}
+        />
+
+        <Container maxWidth="xl" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={dashboardSettings.filter(component => component.enabled).map(component => component.id)}
+            >
+              <Grid container spacing={3} sx={{ height: '100%' }}>
+                {dashboardSettings
+                  .filter(component => component.enabled)
+                  .map((component) => renderDashboardComponent(component))}
+              </Grid>
+            </SortableContext>
+            <DragOverlay>
+              {activeId ? renderDashboardComponent(dashboardSettings.find(c => c.id === activeId)!) : null}
+            </DragOverlay>
+          </DndContext>
+        </Container>
         <AddTransactionFab />
         <CSVImportModal
           open={csvModalOpen}

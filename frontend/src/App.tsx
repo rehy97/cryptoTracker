@@ -15,13 +15,15 @@ import TransactionsPage from "./pages/TransactionsPage";
 import CreateTransactionPage from "./pages/CreateTransactionPage";
 import IntegrationPage from "./pages/IntegrationPage";
 import EditTransactionPage from "./pages/EditTransactionPage";
+import SettingsPage from "./pages/SettingsPage";
+import MarketPage from "./pages/MarketPage";
 
 const App = () => {
   const { theme } = useThemeContext();
   const location = useLocation();
   
   // Upravená podmínka pro zobrazení Navbar
-  const showNavbar = !["/dashboard", "/transactions", "/create-transaction", "/register", "/login", "/edit-transaction"].includes(location.pathname);
+  const showNavbar = !["/dashboard", "/transactions", "/create-transaction", "/register", "/login", "/edit-transaction", "/settings", "/market"].includes(location.pathname);
 
   return (
     <ThemeProvider theme={theme}>
@@ -38,6 +40,8 @@ const App = () => {
           <Route path="/integration" element={<IntegrationPage />} />
           <Route path="/create-transaction" element={<CreateTransactionPage type={null} cryptocurrencyId={null} />} />
           <Route path="/edit-transaction" element={<EditTransactionPage/>} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/market" element={<MarketPage />} />
         </Routes>
         <ToastContainer
           theme={theme.palette.mode === 'dark' ? 'dark' : 'light'}

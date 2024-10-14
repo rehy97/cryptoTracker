@@ -3,20 +3,25 @@ import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   CircularProgress, Avatar, TextField, Select, MenuItem, FormControl, InputLabel, Chip,
   Button, IconButton, Tooltip, Pagination, Container, Grid, Card, CardContent,
-  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+  ThemeProvider, createTheme, CssBaseline, PaletteMode
 } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import axios from 'axios';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { fetchCryptoList } from '../utils/api';
+import axios from 'axios';
 import { debounce } from 'lodash';
 import { useNavigate } from 'react-router-dom';
+import { fetchCryptoList } from '../utils/api';
+import { useAuth } from '../context/useAuth';
+import Header from '../components/Header';
+import AppDrawer from '../components/AppDrawer';
+import amber from '@mui/material/colors/amber';
 
 interface Transaction {
   id: number;
@@ -90,6 +95,9 @@ const DarkSelect = styled(Select)(({ theme }) => ({
 
 const TransactionsPage: React.FC = () => {
   const theme = useTheme();
+  const { user, logout } = useAuth();
+  const [mode, setMode] = useState<PaletteMode>('dark');
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
@@ -103,10 +111,35 @@ const TransactionsPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
 
+  const customTheme = React.useMemo(() => createTheme({
+    palette: {
+      mode,
+      primary: { main: amber[500] }, 
+      secondary: { main: '#f50057' },
+    },
+  }), [mode]);
+
   const handleDeleteClick = (transaction: Transaction) => {
     console.log(transaction);
     setTransactionToDelete(transaction);
     setDeleteDialogOpen(true);
+  };
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleModeChange = (newMode: PaletteMode) => {
+    setMode(newMode);
+  };
+
+  const handleCSVImport = () => {
+    // Implement CSV import logic here
+    console.log('CSV import clicked');
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -237,11 +270,27 @@ const TransactionsPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ backgroundColor: "#121212"  }}>
-    <Container maxWidth="lg" sx={{ py: 4, bgcolor: 'grey.900', minHeight: '100vh', backgroundColor: "#121212" }}>
-      <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
-        Transactions
-      </Typography>
+    <ThemeProvider theme={customTheme}>
+    <CssBaseline />
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Header 
+        onDrawerToggle={handleDrawerToggle}
+        onModeChange={handleModeChange}
+        onCSVImport={handleCSVImport}
+        onLogout={logout}
+        username={user?.username || ''}
+        mode={mode}
+      />
+      <AppDrawer 
+        open={drawerOpen}
+        onClose={handleDrawerToggle}
+        onNavigate={handleNavigation}
+      />
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Container maxWidth="lg" sx={{mb: 4 }}>
+          <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
+            Transactions
+          </Typography>
       
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={8}>
@@ -424,6 +473,8 @@ const TransactionsPage: React.FC = () => {
         </Dialog>
     </Container>
     </Box>
+    </Box>
+    </ThemeProvider>
   );
 };
 
