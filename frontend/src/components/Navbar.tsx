@@ -1,16 +1,18 @@
 import React from 'react';
 import { AppBar, Button, Container, Divider, Drawer, MenuItem, Toolbar, Typography, useTheme, Box } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Link, useNavigate } from 'react-router-dom'; 
 import { alpha } from '@mui/material/styles';
 import ModeToggle from './ModeToggle';
 import { useThemeContext } from '../theme/ThemeContextProvider';
+import logo from '../logo.png';
+import './Navbar.css'; // Ensure to import your CSS file
 
 const Navbar: React.FC = () => {
     const [open, setOpen] = React.useState(false);
     const theme = useTheme();
     const { mode } = useThemeContext();
-    const navigate = useNavigate(); // Initialize useNavigate hook
+    const navigate = useNavigate(); 
 
     const handleToggle = () => {
         setOpen(!open);
@@ -18,17 +20,101 @@ const Navbar: React.FC = () => {
 
     const navLinks = (
         <>
-            <MenuItem component={Link} to="/cryptocurrencies" sx={{ py: '6px', px: '12px' }}>
+            <MenuItem 
+                component={Link} 
+                to="/cryptocurrencies" 
+                sx={{ 
+                    py: '6px', 
+                    px: '12px', 
+                    textTransform: 'none', // Prevent text from being uppercase
+                    textDecoration: 'none', // Remove default underline
+                    color: 'inherit', // Inherit color from parent
+                    '&:hover': {
+                        background: 'none', // Remove hover background
+                    },
+                    position: 'relative', // For underline effect
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        bottom: -2,
+                        height: '2px', // Height of the underline
+                        backgroundColor: '#FFC107', // Underline color
+                        transform: 'scaleX(0)', // Start with scale 0
+                        transition: 'transform 0.3s ease', // Animation
+                    },
+                    '&:hover::after': {
+                        transform: 'scaleX(1)', // Scale to full width on hover
+                    },
+                }} 
+            >
                 <Typography variant="body2" color='text.primary'>
                     Cryptocurrencies
                 </Typography>
             </MenuItem>
-            <MenuItem component={Link} to="/news" sx={{ py: '6px', px: '12px' }}>
+            <MenuItem 
+                component={Link} 
+                to="/news" 
+                sx={{ 
+                    py: '6px', 
+                    px: '12px', 
+                    textTransform: 'none', 
+                    textDecoration: 'none',
+                    color: 'inherit', 
+                    '&:hover': {
+                        background: 'none',
+                    },
+                    position: 'relative',
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        bottom: -2,
+                        height: '2px',
+                        backgroundColor: '#FFC107',
+                        transform: 'scaleX(0)',
+                        transition: 'transform 0.3s ease',
+                    },
+                    '&:hover::after': {
+                        transform: 'scaleX(1)',
+                    },
+                }} 
+            >
                 <Typography variant="body2" color='text.primary'>
                     News
                 </Typography>
             </MenuItem>
-            <MenuItem component={Link} to="/aboutus" sx={{ py: '6px', px: '12px' }}>
+            <MenuItem 
+                component={Link} 
+                to="/aboutus" 
+                sx={{ 
+                    py: '6px', 
+                    px: '12px', 
+                    textTransform: 'none', 
+                    textDecoration: 'none',
+                    color: 'inherit', 
+                    '&:hover': {
+                        background: 'none',
+                    },
+                    position: 'relative',
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        bottom: -2,
+                        height: '2px',
+                        backgroundColor: '#FFC107',
+                        transform: 'scaleX(0)',
+                        transition: 'transform 0.3s ease',
+                    },
+                    '&:hover::after': {
+                        transform: 'scaleX(1)',
+                    },
+                }} 
+            >
                 <Typography variant="body2" color='text.primary'>
                     About Us
                 </Typography>
@@ -49,7 +135,7 @@ const Navbar: React.FC = () => {
     );
 
     const handleLogoClick = () => {
-        navigate('/'); // Navigate to the root path ('/')
+        navigate('/'); 
     };
 
     return (
@@ -93,9 +179,9 @@ const Navbar: React.FC = () => {
                                 }}
                             >
                                 <img
-                                    src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg"
+                                    src={logo}
                                     alt="logo"
-                                    style={{ width: '55px', height: 'auto' }}
+                                    style={{ width: '170px', height: 'auto', margin: '5px' }}
                                 />
                             </Box>
                         </Link>
