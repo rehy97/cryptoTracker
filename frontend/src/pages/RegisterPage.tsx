@@ -85,7 +85,6 @@ const RegisterPage: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
         }}
       >
         <Container maxWidth="sm">

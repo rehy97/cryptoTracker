@@ -21,7 +21,8 @@ import {
   InputAdornment,
   IconButton,
   Tooltip,
-  Pagination
+  Pagination,
+  CardContent
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
@@ -169,17 +170,19 @@ const CryptoList = () => {
   }
 
   return (
+    <CardContent>
     <Container maxWidth="xl">
-      <Box
-        sx={{
-          borderRadius: theme.shape.borderRadius,
-          backgroundColor: theme.palette.background.paper,
-          color: theme.palette.text.primary,
-          boxShadow: theme.shadows[3],
-          p: 3,
-          mt: 4,
-        }}
-      >
+    <Box
+      sx={{
+        borderRadius: theme.shape.borderRadius,
+        backgroundColor: 'background.paper',
+        color: 'text.primary',
+        boxShadow: theme.shadows[3],
+        border: '1px solid',
+        borderColor: 'divider',
+        p: 3,
+      }}
+    >
         <Typography variant="h4" component="h1" align="center" gutterBottom fontWeight="bold" color="primary">
           Featured Cryptocurrencies
         </Typography>
@@ -304,6 +307,7 @@ const CryptoList = () => {
         </Snackbar>
       </Box>
     </Container>
+    </CardContent>
   );
 };
 

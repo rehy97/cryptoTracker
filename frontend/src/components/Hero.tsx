@@ -12,17 +12,16 @@ const Hero = () => {
             sx={{
                 pt: 8,
                 pb: 6,
-                backgroundColor: (theme) => (theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900]),
             }}
         >
             <Container maxWidth="lg">
                 <Grid container spacing={4} alignItems="center">
                     <Grid item xs={12} md={6}>
                         <Typography component="h1" variant="h2" color="textPrimary" gutterBottom>
-                            Vítejte ve světě kryptoměn
+                            Welcome to the World of Cryptocurrencies
                         </Typography>
                         <Typography variant="h5" color="textSecondary" paragraph>
-                            Objevte nejnovější informace o kryptoměnách a jejich trendech.
+                            Discover the latest information about cryptocurrencies and their trends.
                         </Typography>
                         <Box sx={{ display: 'flex', mt: 4 }}>
                             <Button 
@@ -32,14 +31,14 @@ const Hero = () => {
                                 sx={{ mr: 2 }}
                                 startIcon={<TrendingUp />}
                             >
-                                Začít
+                                Get Started
                             </Button>
                             <Button 
                                 variant="outlined" 
                                 color="primary" 
                                 startIcon={<Info />}
                             >
-                                Více informací
+                                More Information
                             </Button>
                         </Box>
                     </Grid>
@@ -51,7 +50,7 @@ const Hero = () => {
                                 objectFit: 'cover',
                                 borderRadius: 2,
                             }}
-                            alt="Hero obrázek"
+                            alt="Hero image"
                             src={heroImage}
                         />
                     </Grid>

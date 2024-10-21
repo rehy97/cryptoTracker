@@ -14,8 +14,6 @@ import { ApexOptions } from 'apexcharts';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import StarIcon from '@mui/icons-material/Star';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 // Zástupné komponenty
 const PlaceholderSection: React.FC<{ title: string }> = ({ title }) => (
@@ -95,25 +93,36 @@ const CryptoDetail: React.FC = () => {
         setActiveTab(newValue);
     };
 
+    
+
     const chartOptions: ApexOptions = {
         chart: {
             type: 'area',
             height: 350,
-            zoom: {
-                enabled: true,
-                type: 'x',
-                autoScaleYaxis: true
-            },
             toolbar: {
-                show: true
-            }
+                show: false,
+              },
+              animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800,
+                animateGradually: {
+                  enabled: true,
+                  delay: 150
+                },
+                dynamicAnimation: {
+                  enabled: true,
+                  speed: 350
+                }
+              },
+              background: '#1E1E1E', // Zde nastavte požadovanou barvu pozadí
         },
         dataLabels: {
             enabled: false
         },
         stroke: {
             curve: 'smooth',
-            width: 2
+            width: 3
         },
         fill: {
             type: 'gradient',
@@ -133,6 +142,12 @@ const CryptoDetail: React.FC = () => {
         yaxis: {
             labels: {
                 formatter: (value) => `$${value.toFixed(2)}`
+            },
+            title: {
+                text: 'Price (USD)',
+                style: {
+                    color: theme.palette.text.primary
+                },
             }
         },
         tooltip: {
@@ -172,7 +187,6 @@ const CryptoDetail: React.FC = () => {
 
     return (
         <Box sx={{ maxWidth: '1200px', margin: '0 auto', p: 2 }}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, bgcolor: 'background.paper' }}>
                 <Grid container spacing={3}>
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -190,9 +204,6 @@ const CryptoDetail: React.FC = () => {
                             </IconButton>
                             <IconButton>
                                 <NotificationsNoneIcon />
-                            </IconButton>
-                            <IconButton onClick={toggleDarkMode}>
-                                {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                             </IconButton>
                         </Box>
                     </Grid>
@@ -237,7 +248,6 @@ const CryptoDetail: React.FC = () => {
                         </Grid>
                     </Grid>
                     <Grid item xs={12} md={8}>
-                        <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="h6">Price Chart</Typography>
                                 <ToggleButtonGroup
@@ -261,7 +271,6 @@ const CryptoDetail: React.FC = () => {
                                     />
                                 </Box>
                             )}
-                        </Paper>
                     </Grid>
                 </Grid>
                 
@@ -285,7 +294,6 @@ const CryptoDetail: React.FC = () => {
                 <Box sx={{ mt: 4 }}>
                     <SentimentIndicator />
                 </Box>
-            </Paper>
         </Box>
     );
 };
