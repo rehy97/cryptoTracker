@@ -6,7 +6,6 @@ import { alpha } from '@mui/material/styles';
 import ModeToggle from './ModeToggle';
 import { useThemeContext } from '../theme/ThemeContextProvider';
 import logo from '../logo.png';
-import './Navbar.css'; // Ensure to import your CSS file
 
 const Navbar: React.FC = () => {
     const [open, setOpen] = React.useState(false);
