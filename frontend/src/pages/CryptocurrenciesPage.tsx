@@ -21,16 +21,27 @@ import {
   Avatar,
   Chip,
   useMediaQuery,
+  Collapse,
+  Button,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import BrushIcon from '@mui/icons-material/Brush';
+import LayersIcon from '@mui/icons-material/Layers';
+import FilterIcon from '@mui/icons-material/Filter';
+import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { fetchCryptoList } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import FearGreedGauge from '../components/FearGreedGauge';
 import MetricCard from '../components/MetricCard';
+import { amber } from '@mui/material/colors';
 
-const MarketPage = () => {
+const CryptocurrenciesPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   interface Cryptocurrency {
@@ -60,7 +71,18 @@ const MarketPage = () => {
   const [currencies, setCurrencies] = useState<{ [key: string]: number }>({ USD: 1 });
   const [searchTerm, setSearchTerm] = useState('');
   const [currencySearchTerm, setCurrencySearchTerm] = useState('');
+  const [expandedMetrics, setExpandedMetrics] = useState(false);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const categories = [
+    { name: 'All', icon: AllInclusiveIcon },
+    { name: 'DeFi', icon: AccountBalanceIcon },
+    { name: 'NFTs', icon: BrushIcon },
+    { name: 'Layer 1', icon: LayersIcon },
+    { name: 'Layer 2', icon: FilterIcon },
+    { name: 'Meme', icon: EmojiEmotionsIcon },
+  ];
 
   const fetchData = async () => {
     setLoading(true);
@@ -121,6 +143,10 @@ const MarketPage = () => {
     if (value !== null) {
       setCurrency(value);
     }
+  };
+
+  const toggleMetrics = () => {
+    setExpandedMetrics(!expandedMetrics);
   };
 
   const handleSearchChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
@@ -185,7 +211,7 @@ const MarketPage = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ my: 4 }}>
+            <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'text.primary' }}>
           Cryptocurrency Market Overview
         </Typography>
@@ -212,39 +238,53 @@ const MarketPage = () => {
               <FearGreedGauge value={fearGreedIndex ?? 0} />
             </Paper>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <MetricCard
-              title="BTC Dominance"
-              value={btcDominance.value}
-              change={btcDominance.change}
-              chart={btcDominance.chart}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <MetricCard
-              title="BTC Network Fee"
-              value={btcFee.value}
-              change={btcFee.change}
-              chart={btcFee.chart}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <MetricCard
-              title="ETH Dominance"
-              value={ethDominance.value}
-              change={ethDominance.change}
-              chart={ethDominance.chart}
-            />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <MetricCard
-              title="ETH Gas Price"
-              value={ethFee.value}
-              change={ethFee.change}
-              chart={ethFee.chart}
-            />
-          </Grid>
         </Grid>
+
+        <Box sx={{ mb: 2 }}>
+          <Button
+            onClick={toggleMetrics}
+            endIcon={expandedMetrics ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ mb: 1 }}
+          >
+            {expandedMetrics ? 'Hide' : 'Show'} BTC & ETH Metrics
+          </Button>
+          <Collapse in={expandedMetrics}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="BTC Dominance"
+                  value={btcDominance.value}
+                  change={btcDominance.change}
+                  chart={btcDominance.chart}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="BTC Network Fee"
+                  value={btcFee.value}
+                  change={btcFee.change}
+                  chart={btcFee.chart}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="ETH Dominance"
+                  value={ethDominance.value}
+                  change={ethDominance.change}
+                  chart={ethDominance.chart}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="ETH Gas Price"
+                  value={ethFee.value}
+                  change={ethFee.change}
+                  chart={ethFee.chart}
+                />
+              </Grid>
+            </Grid>
+          </Collapse>
+        </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2}}>
           <TextField
@@ -282,6 +322,55 @@ const MarketPage = () => {
               </IconButton>
             </Tooltip>
           </Box>
+        </Box>
+
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          overflow: 'auto',
+          backgroundColor: theme.palette.background.paper, // Changed to use the theme's background color
+          padding: 2,
+          borderTopLeftRadius: 15,
+          borderTopRightRadius: 15,
+          border: `1px solid ${theme.palette.divider}`, // Added a subtle border
+        }}>
+          {categories.map((category) => {
+            const Icon = category.icon;
+            const isSelected = selectedCategory === category.name;
+            return (
+              <Chip
+                key={category.name}
+                icon={
+                  <Icon 
+                    sx={{ 
+                      color: isSelected ? amber[500] : theme.palette.text.secondary,
+                      transition: 'color 0.3s',
+                    }} 
+                  />
+                }
+                label={category.name}
+                onClick={() => setSelectedCategory(category.name)}
+                sx={{
+                  mx: 0.5,
+                  backgroundColor: isSelected ? amber[400] : 'transparent',
+                  color: isSelected ? theme.palette.common.white : theme.palette.text.primary,
+                  transition: 'all 0.3s',
+                  '&:hover': {
+                    backgroundColor: amber[500],
+                    '& .MuiChip-icon, & .MuiChip-label': {
+                      color: theme.palette.common.white,
+                    },
+                  },
+                  '& .MuiChip-icon': {
+                    color: isSelected ? theme.palette.common.white : theme.palette.text.secondary,
+                  },
+                  '& .MuiChip-label': {
+                    transition: 'color 0.3s',
+                  },
+                }}
+              />
+            );
+          })}
         </Box>
 
         <TableContainer component={Paper}>
@@ -348,4 +437,4 @@ const MarketPage = () => {
   );
 };
 
-export default MarketPage;
+export default CryptocurrenciesPage;

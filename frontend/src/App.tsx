@@ -18,6 +18,7 @@ import EditTransactionPage from "./pages/EditTransactionPage";
 import SettingsPage from "./pages/SettingsPage";
 import MarketPage from "./pages/MarketPage";
 import NewsPage from "./pages/NewsPage";
+import CryptocurrenciesPage from "./pages/CryptocurrenciesPage";
 
 const App = () => {
   const { theme } = useThemeContext();
@@ -34,6 +35,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/cryptocurrencies" element={<CryptocurrenciesPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/crypto/:id" element={<CryptoDetailPage />} />
