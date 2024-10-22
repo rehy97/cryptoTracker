@@ -1,61 +1,69 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
   Typography,
-  Container,
-  Grid,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
   useTheme,
 } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import GaugeChart from 'react-gauge-chart';
-import { fetchCryptoList } from '../utils/api';
-import { useNavigate } from 'react-router-dom';
 
 interface FearGreedGaugeProps {
   value: number;
 }
 
-const FearGreedGauge: React.FC<FearGreedGaugeProps> = ({ value }) => {
+const getSentiment = (value: number) => {
+  if (value <= 25) return 'Extreme Fear';
+  if (value <= 50) return 'Fear';
+  if (value <= 75) return 'Greed';
+  return 'Extreme Greed';
+};
+
+const chartStyle = {
+  width: '100%',
+} as const;
+
+const FearGreedGauge: React.FC<FearGreedGaugeProps> = React.memo(({ value }) => {
   const theme = useTheme();
+  
+  // Memoize colors array since it depends on theme which shouldn't change often
+  const colors = useMemo(() => [
+    theme.palette.error.main,
+    theme.palette.warning.main,
+    theme.palette.success.light,
+    theme.palette.success.main
+  ], [theme.palette]);
 
-  const chartStyle = {
-    width: '100%',
-  };
+  // Memoize needle colors
+  const needleColors = useMemo(() => ({
+    needleColor: theme.palette.grey[400],
+    needleBaseColor: theme.palette.grey[700]
+  }), [theme.palette.grey]);
 
-  const getSentiment = (value: number) => {
-    if (value <= 25) return 'Extreme Fear';
-    if (value <= 50) return 'Fear';
-    if (value <= 75) return 'Greed';
-    return 'Extreme Greed';
-  };
+  // Memoize sentiment since it only depends on value
+  const sentiment = useMemo(() => getSentiment(value), [value]);
+
+  // Memoize percent calculation
+  const percent = useMemo(() => value / 100, [value]);
 
   return (
     <Box sx={{ textAlign: 'center' }}>
       <GaugeChart
         id="fear-greed-gauge"
         nrOfLevels={4}
-        colors={[theme.palette.error.main, theme.palette.warning.main, theme.palette.success.light, theme.palette.success.main]}
+        colors={colors}
         arcWidth={0.3}
-        percent={value / 100}
+        percent={percent}
         hideText={true}
-        needleColor={theme.palette.grey[400]}
-        needleBaseColor={theme.palette.grey[700]}
+        needleColor={needleColors.needleColor}
+        needleBaseColor={needleColors.needleBaseColor}
         style={chartStyle}
       />
       <Typography variant="h4" sx={{ mt: 2 }}>{value}</Typography>
-      <Typography variant="body1">{getSentiment(value)}</Typography>
+      <Typography variant="body1">{sentiment}</Typography>
     </Box>
   );
-};
+});
+
+// Add display name for better debugging
+FearGreedGauge.displayName = 'FearGreedGauge';
 
 export default FearGreedGauge;

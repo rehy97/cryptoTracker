@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -34,17 +34,13 @@ import BrushIcon from '@mui/icons-material/Brush';
 import LayersIcon from '@mui/icons-material/Layers';
 import FilterIcon from '@mui/icons-material/Filter';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { fetchCryptoList } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import FearGreedGauge from '../components/FearGreedGauge';
 import MetricCard from '../components/MetricCard';
 import { amber } from '@mui/material/colors';
 
-const CryptocurrenciesPage = () => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  interface Cryptocurrency {
+interface Cryptocurrency {
     id: string;
     name: string;
     symbol: string;
@@ -56,128 +52,217 @@ const CryptocurrenciesPage = () => {
     market_cap: number;
     total_volume: number;
   }
-  
-  const [cryptocurrencies, setCryptocurrencies] = useState<Cryptocurrency[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [fearGreedIndex, setFearGreedIndex] = useState<number | null>(null);
-  const [marketCap, setMarketCap] = useState<{ value: string, change: string, chart: { value: number }[] }>({ value: '$2.36T', change: '-0.15%', chart: [] });
-  const [tradingVolume, setTradingVolume] = useState<{ value: string, chart: { value: number }[] }>({ value: '$132.41B', chart: [] });
-  const [btcDominance, setBtcDominance] = useState<{ value: string, change: string, chart: { value: number }[] }>({ value: '42.5%', change: '+0.3%', chart: [] });
-  const [btcFee, setBtcFee] = useState<{ value: string, change: string, chart: { value: number }[] }>({ value: '$2.34', change: '-5.2%', chart: [] });
-  const [ethDominance, setEthDominance] = useState<{ value: string, change: string, chart: { value: number }[] }>({ value: '18.2%', change: '-0.1%', chart: [] });
-  const [ethFee, setEthFee] = useState<{ value: string, change: string, chart: { value: number }[] }>({ value: '$3.52', change: '+10.5%', chart: [] });
-  const [currency, setCurrency] = useState('USD');
-  const [currencies, setCurrencies] = useState<{ [key: string]: number }>({ USD: 1 });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currencySearchTerm, setCurrencySearchTerm] = useState('');
-  const [expandedMetrics, setExpandedMetrics] = useState(false);
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = [
+  const CATEGORIES = [
     { name: 'All', icon: AllInclusiveIcon },
     { name: 'DeFi', icon: AccountBalanceIcon },
     { name: 'NFTs', icon: BrushIcon },
     { name: 'Layer 1', icon: LayersIcon },
     { name: 'Layer 2', icon: FilterIcon },
     { name: 'Meme', icon: EmojiEmotionsIcon },
-  ];
+  ] as const;
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [cryptoData, currencyData, fearGreedData] = await Promise.all([
-        fetchCryptoList(),
-        fetch('https://api.exchangerate-api.com/v4/latest/USD').then(res => res.json()),
-        fetch('https://api.alternative.me/fng/').then(res => res.json())
-      ]);
-      
-      setCryptocurrencies(cryptoData);
-      setCurrencies(currencyData.rates);
-      setFearGreedIndex(parseInt(fearGreedData.data[0].value, 10));
+  const CategoryChip = React.memo(({ 
+    category, 
+    isSelected, 
+    onClick 
+  }: { 
+    category: typeof CATEGORIES[number],
+    isSelected: boolean,
+    onClick: () => void
+  }) => {
+    const theme = useTheme();
+    const Icon = category.icon;
+    
+    return (
+      <Chip
+        icon={
+          <Icon 
+            sx={{ 
+              color: isSelected ? amber[500] : theme.palette.text.secondary,
+              transition: 'color 0.3s',
+            }} 
+          />
+        }
+        label={category.name}
+        onClick={onClick}
+        sx={{
+          mx: 0.5,
+          backgroundColor: isSelected ? amber[400] : 'transparent',
+          color: isSelected ? theme.palette.common.white : theme.palette.text.primary,
+          transition: 'all 0.3s',
+          '&:hover': {
+            backgroundColor: amber[500],
+            '& .MuiChip-icon, & .MuiChip-label': {
+              color: theme.palette.common.white,
+            },
+          },
+          '& .MuiChip-icon': {
+            color: isSelected ? theme.palette.common.white : theme.palette.text.secondary,
+          },
+          '& .MuiChip-label': {
+            transition: 'color 0.3s',
+          },
+        }}
+      />
+    );
+  });
 
-      // Simulace dat pro nové metriky
-      setMarketCap({
+  const CryptoTableRow = React.memo(({ 
+    crypto, 
+    currency, 
+    isSmallScreen,
+    formatPrice,
+    formatPercentage,
+    onRowClick
+  }: {
+    crypto: Cryptocurrency,
+    currency: string,
+    isSmallScreen: boolean,
+    formatPrice: (price: number) => string,
+    formatPercentage: (value: number | null) => React.ReactNode,
+    onRowClick: (id: string) => void
+  }) => {
+    const theme = useTheme();
+    
+    const handleClick = useCallback(() => {
+      onRowClick(crypto.id);
+    }, [crypto.id, onRowClick]);
+  
+    return (
+      <TableRow
+        hover
+        onClick={handleClick}
+        sx={{
+          cursor: "pointer",
+          '&:hover': {
+            backgroundColor: `${theme.palette.primary.main}10`,
+          },
+        }}
+      >
+        <TableCell>
+          <Avatar alt={crypto.name} src={crypto.image} sx={{ width: 40, height: 40 }} />
+        </TableCell>
+        <TableCell>
+          <Typography variant="subtitle1" fontWeight="medium">{crypto.name}</Typography>
+          {isSmallScreen && (
+            <Typography variant="body2" color="text.secondary">
+              {crypto.symbol.toUpperCase()} - {currency} {formatPrice(crypto.current_price)}
+            </Typography>
+          )}
+        </TableCell>
+        {!isSmallScreen && (
+          <>
+            <TableCell>{crypto.symbol.toUpperCase()}</TableCell>
+            <TableCell>{currency} {formatPrice(crypto.current_price)}</TableCell>
+            <TableCell>{formatPercentage(crypto.price_change_percentage_1h_in_currency)}</TableCell>
+            <TableCell>{formatPercentage(crypto.price_change_percentage_24h_in_currency)}</TableCell>
+            <TableCell>{formatPercentage(crypto.price_change_percentage_7d_in_currency)}</TableCell>
+            <TableCell>{currency} {formatPrice(crypto.market_cap)}</TableCell>
+            <TableCell>{currency} {formatPrice(crypto.total_volume)}</TableCell>
+          </>
+        )}
+      </TableRow>
+    );
+  });
+
+  const CryptocurrenciesPage = () => {
+    const theme = useTheme();
+    const navigate = useNavigate();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  
+    // State management with proper typing
+    const [state, setState] = useState({
+      cryptocurrencies: [] as Cryptocurrency[],
+      loading: true,
+      error: '',
+      fearGreedIndex: null as number | null,
+      expandedMetrics: false,
+      selectedCategory: 'All',
+      searchTerm: '',
+      currencySearchTerm: '',
+      currency: 'USD',
+      currencies: { USD: 1 } as Record<string, number>,
+    });
+  
+    // Memoized metric states
+    const [metrics] = useState(() => ({
+      marketCap: {
         value: '$2.36T',
         change: '-0.15%',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 2.3 + Math.random() * 0.2 }))
-      });
-      setTradingVolume({
+        chart: Array.from({ length: 30 }, () => ({ value: 2.3 + Math.random() * 0.2 }))
+      },
+      tradingVolume: {
         value: '$132.41B',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 120 + Math.random() * 25 }))
-      });
-      setBtcDominance({
+        chart: Array.from({ length: 30 }, () => ({ value: 120 + Math.random() * 25 }))
+      },
+      btcDominance: {
         value: '42.5%',
         change: '+0.3%',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 42 + Math.random() * 1 }))
-      });
-      setBtcFee({
+        chart: Array.from({ length: 30 }, () => ({ value: 42 + Math.random() * 1 }))
+      },
+      btcFee: {
         value: '$2.34',
         change: '-5.2%',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 2 + Math.random() * 0.5 }))
-      });
-      setEthDominance({
+        chart: Array.from({ length: 30 }, () => ({ value: 2 + Math.random() * 0.5 }))
+      },
+      ethDominance: {
         value: '18.2%',
         change: '-0.1%',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 18 + Math.random() * 0.5 }))
-      });
-      setEthFee({
+        chart: Array.from({ length: 30 }, () => ({ value: 18 + Math.random() * 0.5 }))
+      },
+      ethFee: {
         value: '$3.52',
         change: '+10.5%',
-        chart: Array.from({ length: 30 }, (_, i) => ({ value: 3 + Math.random() * 1 }))
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError("Failed to fetch data.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        chart: Array.from({ length: 30 }, () => ({ value: 3 + Math.random() * 1 }))
+      }
+    }));
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleCurrencyChange = (event: any, value: string | null) => {
-    if (value !== null) {
-      setCurrency(value);
-    }
-  };
-
-  const toggleMetrics = () => {
-    setExpandedMetrics(!expandedMetrics);
-  };
-
-  const handleSearchChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleCurrencySearchChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
-    setCurrencySearchTerm(event.target.value);
-  };
-
-  const handleRefresh = () => {
-    fetchData();
-  };
-
-  const formatPrice = (priceUSD: number) => {
-    const rate = currencies[currency] || 1;
-    const convertedPrice = priceUSD * rate;
-    return convertedPrice.toFixed(2);
-  };
-
-  const formatPercentage = (value: number | null) => {
-    if (value !== null) {
+    const handleCurrencyChange = useCallback((event: any, value: string | null) => {
+      if (value !== null) {
+        setState(prev => ({ ...prev, currency: value }));
+      }
+    }, []);
+  
+    const toggleMetrics = useCallback(() => {
+      setState(prev => ({ ...prev, expandedMetrics: !prev.expandedMetrics }));
+    }, []);
+  
+    const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+      setState(prev => ({ ...prev, searchTerm: event.target.value }));
+    }, []);
+  
+    const handleCurrencySearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+      setState(prev => ({ ...prev, currencySearchTerm: event.target.value }));
+    }, []);
+  
+    const handleCategorySelect = useCallback((category: string) => {
+      setState(prev => ({ ...prev, selectedCategory: category }));
+    }, []);
+  
+    const handleRowClick = useCallback((id: string) => {
+      navigate(`/crypto/${id}`);
+    }, [navigate]);
+  
+    // Memoized formatting functions
+    const formatPrice = useCallback((priceUSD: number) => {
+      const rate = state.currencies[state.currency] || 1;
+      const convertedPrice = priceUSD * rate;
+      return convertedPrice.toFixed(2);
+    }, [state.currencies, state.currency]);
+  
+    const formatPercentage = useCallback((value: number | null) => {
+      if (value === null) return 'N/A';
+      
       const formattedValue = `${value.toFixed(2)}%`;
       let color = theme.palette.text.primary;
-
+  
       if (value < 0) {
         color = theme.palette.error.main;
       } else if (value > 0) {
         color = theme.palette.success.main;
       }
-
+  
       return (
         <Chip
           label={formattedValue}
@@ -189,25 +274,55 @@ const CryptocurrenciesPage = () => {
           }}
         />
       );
-    } else {
-      return 'N/A';
+    }, [theme.palette]);
+  
+    // Memoized filtered cryptocurrencies
+    const filteredCryptocurrencies = useMemo(() => {
+      return state.cryptocurrencies.filter(crypto =>
+        crypto.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+        crypto.symbol.toLowerCase().includes(state.searchTerm.toLowerCase())
+      );
+    }, [state.cryptocurrencies, state.searchTerm]);
+  
+    // Data fetching
+    const fetchData = useCallback(async () => {
+      setState(prev => ({ ...prev, loading: true }));
+      try {
+        const [cryptoData, currencyData, fearGreedData] = await Promise.all([
+          fetchCryptoList(),
+          fetch('https://api.exchangerate-api.com/v4/latest/USD').then(res => res.json()),
+          fetch('https://api.alternative.me/fng/').then(res => res.json())
+        ]);
+        
+        setState(prev => ({
+          ...prev,
+          cryptocurrencies: cryptoData,
+          currencies: currencyData.rates,
+          fearGreedIndex: parseInt(fearGreedData.data[0].value, 10),
+          loading: false,
+          error: ''
+        }));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setState(prev => ({
+          ...prev,
+          error: "Failed to fetch data.",
+          loading: false
+        }));
+      }
+    }, []);
+  
+    useEffect(() => {
+      fetchData();
+    }, [fetchData]);
+  
+    if (state.loading) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
+        </Box>
+      );
     }
-  };
-
-  const filteredCryptocurrencies = useMemo(() => {
-    return cryptocurrencies.filter(crypto =>
-      crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [cryptocurrencies, searchTerm]);
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
     <Container maxWidth="xl">
@@ -220,22 +335,22 @@ const CryptocurrenciesPage = () => {
           <Grid item xs={12} md={4}>
             <MetricCard
               title="Market Cap"
-              value={marketCap.value}
-              change={marketCap.change}
-              chart={marketCap.chart}
+              value={metrics.marketCap.value}
+              change={metrics.marketCap.change}
+              chart={metrics.marketCap.chart}
             />
           </Grid>
           <Grid item xs={12} md={4}>
             <MetricCard
               title="24h Trading Volume"
-              value={tradingVolume.value}
-              chart={tradingVolume.chart}
+              value={metrics.tradingVolume.value}
+              chart={metrics.tradingVolume.chart}
             />
           </Grid>
           <Grid item xs={12} md={4}>
             <Paper sx={{ p: 2, height: '100%', backgroundColor: 'background.paper' }}>
               <Typography variant="h6" gutterBottom>Fear & Greed Index</Typography>
-              <FearGreedGauge value={fearGreedIndex ?? 0} />
+              <FearGreedGauge value={state.fearGreedIndex ?? 0} />
             </Paper>
           </Grid>
         </Grid>
@@ -243,43 +358,43 @@ const CryptocurrenciesPage = () => {
         <Box sx={{ mb: 2 }}>
           <Button
             onClick={toggleMetrics}
-            endIcon={expandedMetrics ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            endIcon={state.expandedMetrics ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             sx={{ mb: 1 }}
           >
-            {expandedMetrics ? 'Hide' : 'Show'} BTC & ETH Metrics
+            {state.expandedMetrics ? 'Hide' : 'Show'} BTC & ETH Metrics
           </Button>
-          <Collapse in={expandedMetrics}>
+          <Collapse in={state.expandedMetrics}>
             <Grid container spacing={3}>
               <Grid item xs={12} md={3}>
                 <MetricCard
                   title="BTC Dominance"
-                  value={btcDominance.value}
-                  change={btcDominance.change}
-                  chart={btcDominance.chart}
+                  value={metrics.btcDominance.value}
+                  change={metrics.btcDominance.change}
+                  chart={metrics.btcDominance.chart}
                 />
               </Grid>
               <Grid item xs={12} md={3}>
                 <MetricCard
                   title="BTC Network Fee"
-                  value={btcFee.value}
-                  change={btcFee.change}
-                  chart={btcFee.chart}
+                  value={metrics.btcFee.value}
+                  change={metrics.btcFee.change}
+                  chart={metrics.btcFee.chart}
                 />
               </Grid>
               <Grid item xs={12} md={3}>
                 <MetricCard
                   title="ETH Dominance"
-                  value={ethDominance.value}
-                  change={ethDominance.change}
-                  chart={ethDominance.chart}
+                  value={metrics.ethDominance.value}
+                  change={metrics.ethDominance.change}
+                  chart={metrics.ethDominance.chart}
                 />
               </Grid>
               <Grid item xs={12} md={3}>
                 <MetricCard
                   title="ETH Gas Price"
-                  value={ethFee.value}
-                  change={ethFee.change}
-                  chart={ethFee.chart}
+                  value={metrics.ethFee.value}
+                  change={metrics.ethFee.change}
+                  chart={metrics.ethFee.chart}
                 />
               </Grid>
             </Grid>
@@ -290,7 +405,7 @@ const CryptocurrenciesPage = () => {
           <TextField
             label="Search Crypto"
             variant="outlined"
-            value={searchTerm}
+            value={state.searchTerm}
             onChange={handleSearchChange}
             InputProps={{
               startAdornment: (
@@ -303,9 +418,9 @@ const CryptocurrenciesPage = () => {
           />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Autocomplete
-              value={currency}
+              value={state.currency}
               onChange={handleCurrencyChange}
-              options={Object.keys(currencies)}
+              options={Object.keys(state.currencies)}
               renderInput={(params) => (
                 <TextField 
                   {...params} 
@@ -317,7 +432,7 @@ const CryptocurrenciesPage = () => {
               sx={{ width: 200 }}
             />
             <Tooltip title="Refresh data">
-              <IconButton onClick={handleRefresh} color="primary">
+              <IconButton onClick={fetchData} color="primary">
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
@@ -334,9 +449,9 @@ const CryptocurrenciesPage = () => {
           borderTopRightRadius: 15,
           border: `1px solid ${theme.palette.divider}`, // Added a subtle border
         }}>
-          {categories.map((category) => {
+          {CATEGORIES.map((category) => {
             const Icon = category.icon;
-            const isSelected = selectedCategory === category.name;
+            const isSelected = state.selectedCategory === category.name;
             return (
               <Chip
                 key={category.name}
@@ -349,7 +464,7 @@ const CryptocurrenciesPage = () => {
                   />
                 }
                 label={category.name}
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => handleCategorySelect(category.name)}
                 sx={{
                   mx: 0.5,
                   backgroundColor: isSelected ? amber[400] : 'transparent',
@@ -382,12 +497,12 @@ const CryptocurrenciesPage = () => {
                 {!isSmallScreen && (
                   <>
                     <TableCell>Symbol</TableCell>
-                    <TableCell>Current Price ({currency})</TableCell>
+                    <TableCell>Current Price ({state.currency})</TableCell>
                     <TableCell>1h</TableCell>
                     <TableCell>24h</TableCell>
                     <TableCell>7d</TableCell>
-                    <TableCell>Market Cap ({currency})</TableCell>
-                    <TableCell>Volume (24h) ({currency})</TableCell>
+                    <TableCell>Market Cap ({state.currency})</TableCell>
+                    <TableCell>Volume (24h) ({state.currency})</TableCell>
                   </>
                 )}
               </TableRow>
@@ -412,19 +527,19 @@ const CryptocurrenciesPage = () => {
                     <Typography variant="subtitle1" fontWeight="medium">{crypto.name}</Typography>
                     {isSmallScreen && (
                       <Typography variant="body2" color="text.secondary">
-                        {crypto.symbol.toUpperCase()} - {currency} {formatPrice(crypto.current_price)}
+                        {crypto.symbol.toUpperCase()} - {state.currency} {formatPrice(crypto.current_price)}
                       </Typography>
                     )}
                   </TableCell>
                   {!isSmallScreen && (
                     <>
                       <TableCell>{crypto.symbol.toUpperCase()}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.current_price)}</TableCell>
+                      <TableCell>{state.currency} {formatPrice(crypto.current_price)}</TableCell>
                       <TableCell>{formatPercentage(crypto.price_change_percentage_1h_in_currency)}</TableCell>
                       <TableCell>{formatPercentage(crypto.price_change_percentage_24h_in_currency)}</TableCell>
                       <TableCell>{formatPercentage(crypto.price_change_percentage_7d_in_currency)}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.market_cap)}</TableCell>
-                      <TableCell>{currency} {formatPrice(crypto.total_volume)}</TableCell>
+                      <TableCell>{state.currency} {formatPrice(crypto.market_cap)}</TableCell>
+                      <TableCell>{state.currency} {formatPrice(crypto.total_volume)}</TableCell>
                     </>
                   )}
                 </TableRow>
